@@ -54,6 +54,27 @@ app.post("/trades", async (req: Request, res: Response) => {
     }
 });
 
+app.get("/trades", async (req: Request, res: Response) => {
+    try {
+        const allTrades = await pool.query("SELECT * FROM trades ORDER BY created_at DESC");
+        res.json(allTrades.rows);
+    } catch(err) {
+        console.error(err);
+        res.status(500).send("Server Error");
+    }
+});
+
+app.delete("/trades/:id", async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await pool.query("DELETE FROM trades WHERE trade_id = $1", [id]);
+        res.json({message: "Trade deleted"});
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server Error");
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
