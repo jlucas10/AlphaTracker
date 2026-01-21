@@ -23,6 +23,7 @@ const COLORS = ['#60A5FA', '#34D399', '#F87171', '#FBBF24', '#818CF8'];
 function App() {
     const [trades, setTrades] = useState<Trade[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const [formData, setFormData] = useState({
         ticker: '',
@@ -34,7 +35,7 @@ function App() {
 
     const fetchTrades = async () => {
         try {
-            const response = await fetch('http://localhost:5001/trades');
+            const response = await fetch(`${API_URL}/trades`);
             const data = await response.json();
             setTrades(data);
             processChartData(data);
@@ -77,7 +78,7 @@ function App() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5001/trades', {
+            const response = await fetch(`${API_URL}/trades`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -93,7 +94,7 @@ function App() {
 
     const deleteTrade = async (id: number) => {
         try {
-            await fetch(`http://localhost:5001/trades/${id}`, { method: 'DELETE' });
+            await fetch(`${API_URL}/trades/${id}`, { method: 'DELETE' });
             const updatedTrades = trades.filter(trade => trade.trade_id !== id);
             setTrades(updatedTrades);
             processChartData(updatedTrades); // Update chart instantly
