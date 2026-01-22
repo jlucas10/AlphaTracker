@@ -23,7 +23,7 @@ const COLORS = ['#60A5FA', '#34D399', '#F87171', '#FBBF24', '#818CF8'];
 function App() {
     const [trades, setTrades] = useState<Trade[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_URL = "https://alpha-tracker-iota.vercel.app";
 
     const [formData, setFormData] = useState({
         ticker: '',
