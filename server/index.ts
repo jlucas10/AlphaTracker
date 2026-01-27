@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./db";
+import axios from 'axios';
 
 dotenv.config();
 
@@ -72,6 +73,25 @@ app.delete("/trades/:id", async (req: Request, res: Response) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Server Error");
+    }
+});
+
+//Get Real-Time Stock Prices
+app.get("/api/price/:ticker", async (req: Request, res: Response) => {
+    try {
+        const { ticker } = req.params;
+        const apiKey = process.env.FINNHUB_KEY;
+
+        // Call Finnhub API
+        const response = await axios.get(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`);
+
+        // Finnhub returns 'c' for Current Price. If it's 0, the ticker might be wrong.
+        const price = response.data.c;
+
+        res.json({ price });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching price");
     }
 });
 

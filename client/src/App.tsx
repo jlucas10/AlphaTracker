@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 interface Trade {
     trade_id: number;
     ticker: string;
-    entry_price: string; // Postgres returns money as string
+    entry_price: string;
     shares: number;
     trade_type: string;
     setup: string;
@@ -21,9 +21,12 @@ interface ChartData {
 const COLORS = ['#60A5FA', '#34D399', '#F87171', '#FBBF24', '#818CF8'];
 
 function App() {
+    // 1. SMART URL SELECTION
+    // If Vercel sets this variable, use it. If not, default to localhost.
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
     const [trades, setTrades] = useState<Trade[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
-    const API_URL = "https://alpha-tracker-iota.vercel.app";
 
     const [formData, setFormData] = useState({
         ticker: '',
@@ -32,6 +35,36 @@ function App() {
         trade_type: 'LONG',
         setup: 'Breakout'
     });
+
+    // --- NEW FUNCTION: Fetch Real-Time Price ---
+    const fetchPrice = async () => {
+        if (!formData.ticker) return;
+
+        try {
+            // Show loading state
+            const originalPrice = formData.entry_price;
+            setFormData({ ...formData, entry_price: "..." });
+
+            const response = await fetch(`${API_URL}/api/price/${formData.ticker.toUpperCase()}`);
+
+            if (!response.ok) {
+                throw new Error("Ticker not found");
+            }
+
+            const data = await response.json();
+
+            if (data.price) {
+                setFormData(prev => ({ ...prev, entry_price: data.price.toString() }));
+            } else {
+                alert("Ticker not found or API limit reached.");
+                setFormData(prev => ({ ...prev, entry_price: originalPrice }));
+            }
+        } catch (error) {
+            console.error("Error fetching price:", error);
+            alert("Error fetching price. Make sure Backend is running!");
+            setFormData(prev => ({ ...prev, entry_price: "" }));
+        }
+    };
 
     const fetchTrades = async () => {
         try {
@@ -44,11 +77,8 @@ function App() {
         }
     };
 
-    // --- DATA PROCESSING FOR CHART ---
     const processChartData = (tradeList: Trade[]) => {
-        // 1. Group by Ticker and Sum the Total Value (Price * Shares)
         const allocation: { [key: string]: number } = {};
-
         tradeList.forEach(trade => {
             const value = parseFloat(trade.entry_price) * trade.shares;
             if (allocation[trade.ticker]) {
@@ -58,12 +88,10 @@ function App() {
             }
         });
 
-        // 2. Convert to Array for Recharts
         const processed = Object.keys(allocation).map(ticker => ({
             name: ticker,
             value: allocation[ticker]
         }));
-
         setChartData(processed);
     };
 
@@ -97,7 +125,7 @@ function App() {
             await fetch(`${API_URL}/trades/${id}`, { method: 'DELETE' });
             const updatedTrades = trades.filter(trade => trade.trade_id !== id);
             setTrades(updatedTrades);
-            processChartData(updatedTrades); // Update chart instantly
+            processChartData(updatedTrades);
         } catch (error) {
             console.error("Error deleting trade:", error);
         }
@@ -115,11 +143,22 @@ function App() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="text-xs text-slate-400 uppercase font-bold">Ticker</label>
-                            <input
-                                name="ticker" value={formData.ticker} onChange={handleChange}
-                                placeholder="NVDA"
-                                className="w-full bg-slate-900 border border-slate-600 rounded p-3 uppercase focus:border-blue-500 outline-none transition"
-                            />
+                            {/* UPDATED TICKER INPUT WITH BUTTON */}
+                            <div className="flex gap-2">
+                                <input
+                                    name="ticker" value={formData.ticker} onChange={handleChange}
+                                    placeholder="NVDA"
+                                    className="w-full bg-slate-900 border border-slate-600 rounded p-3 uppercase focus:border-blue-500 outline-none transition"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={fetchPrice}
+                                    className="bg-blue-600 hover:bg-blue-500 px-4 rounded font-bold text-sm transition shadow-lg shadow-blue-500/20"
+                                    title="Fetch Current Price"
+                                >
+                                    🔍
+                                </button>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -187,7 +226,7 @@ function App() {
                                                 paddingAngle={5}
                                                 dataKey="value"
                                             >
-                                                {chartData.map((entry, index) => (
+                                                {chartData.map((_entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
