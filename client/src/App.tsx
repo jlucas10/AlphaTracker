@@ -43,7 +43,6 @@ function App() {
         try {
             // Show loading state
             const originalPrice = formData.entry_price;
-            setFormData({ ...formData, entry_price: "..." });
 
             const response = await fetch(`${API_URL}/api/price/${formData.ticker.toUpperCase()}`);
 
