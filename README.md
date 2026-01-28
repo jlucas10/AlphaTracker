@@ -7,7 +7,7 @@
 **AlphaTracker** is a high-performance, full-stack day trading journal designed for speed and data integrity. Built on the PERN stack, it allows traders to log, track, and analyze their trade performance with sub-100ms latency.
 
 ## 🚀 Live Demo
-[View Live Demo](https://alphatracker.demo) ---
+[View Live Demo](https://alpha-tracker-w8vu-a6ckdefp1-jos-projects-689ef5f3.vercel.app/) ---
 
 ## 🏗 Architecture & Tech Stack
 
