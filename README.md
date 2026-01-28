@@ -75,7 +75,6 @@ The database is designed with normalization in mind to handle scale. Key tables 
 * `trades` (Core transaction data)
 * `assets` (Ticker symbols and sector info)
 
-*(Optional: Add a screenshot of your ER Diagram here)*
 
 ---
 
@@ -88,5 +87,5 @@ The database is designed with normalization in mind to handle scale. Key tables 
 ## 📬 Contact
 
 **Josiah Lucas**
-* [LinkedIn](https://linkedin.com/in/yourprofile)
-* [GitHub](https://github.com/yourusername)
+* [LinkedIn](www.linkedin.com/in/josiahjlucas)
+* [GitHub](https://github.com/jlucas10)
