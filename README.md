@@ -87,5 +87,5 @@ The database is designed with normalization in mind to handle scale. Key tables 
 ## 📬 Contact
 
 **Josiah Lucas**
-* [LinkedIn](www.linkedin.com/in/josiahjlucas)
+* [LinkedIn](https://www.linkedin.com/in/josiahjlucas/)
 * [GitHub](https://github.com/jlucas10)
