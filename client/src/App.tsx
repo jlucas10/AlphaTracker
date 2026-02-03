@@ -247,6 +247,7 @@ function App() {
                                                     </Pie>
                                                     <Tooltip
                                                         contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                                                        itemStyle={{ color: '#ffffff', fontWeight: 'bold' }}
                                                         formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
                                                     />
                                                     <Legend verticalAlign="bottom" height={36}/>
