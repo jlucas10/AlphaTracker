@@ -22,7 +22,8 @@ const COLORS = ['#60A5FA', '#34D399', '#F87171', '#FBBF24', '#818CF8'];
 
 function App() {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-    const { user } = useUser(); // Get the current user's info
+    const { user } = useUser();
+    const [isLoadingPrice, setIsLoadingPrice] = useState(false); // New state for loading
 
     const [trades, setTrades] = useState<Trade[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -35,30 +36,32 @@ function App() {
         setup: 'Breakout'
     });
 
+    // --- FIX 1: Loading State ---
+    // Instead of setting the text to "...", we use a boolean flag
     const fetchPrice = async () => {
         if (!formData.ticker) return;
+        setIsLoadingPrice(true); // Start loading
         try {
-            const originalPrice = formData.entry_price;
-            setFormData({ ...formData, entry_price: "..." });
             const response = await fetch(`${API_URL}/api/price/${formData.ticker.toUpperCase()}`);
             if (!response.ok) throw new Error("Ticker not found");
             const data = await response.json();
+
             if (data.price) {
                 setFormData(prev => ({ ...prev, entry_price: data.price.toString() }));
             } else {
                 alert("Ticker not found");
-                setFormData(prev => ({ ...prev, entry_price: originalPrice }));
             }
         } catch (error) {
             console.error("Error fetching price:", error);
-            setFormData(prev => ({ ...prev, entry_price: "" }));
+            alert("Error fetching price");
+        } finally {
+            setIsLoadingPrice(false); // Stop loading
         }
     };
 
     const fetchTrades = async () => {
-        if (!user) return; // specific check
+        if (!user) return;
         try {
-            // We pass the user.id as a query parameter
             const response = await fetch(`${API_URL}/trades?user_id=${user.id}`);
             const data = await response.json();
             setTrades(data);
@@ -86,7 +89,6 @@ function App() {
     };
 
     useEffect(() => {
-        // Only fetch trades if the user is actually signed in
         if (user) {
             fetchTrades();
         }
@@ -127,8 +129,6 @@ function App() {
 
     return (
         <div className="min-h-screen bg-slate-900 text-white font-sans">
-
-            {/* 1. STATE: SIGNED OUT (Landing Page) */}
             <SignedOut>
                 <div className="flex flex-col items-center justify-center h-screen space-y-6 text-center p-4">
                     <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
@@ -145,10 +145,8 @@ function App() {
                 </div>
             </SignedOut>
 
-            {/* 2. STATE: SIGNED IN (Dashboard) */}
             <SignedIn>
                 <div className="p-8">
-                    {/* Header with User Profile */}
                     <div className="max-w-6xl mx-auto flex justify-between items-center mb-8">
                         <h1 className="text-2xl font-bold text-blue-400">AlphaTracker</h1>
                         <div className="flex items-center gap-4">
@@ -158,7 +156,6 @@ function App() {
                     </div>
 
                     <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* LEFT COLUMN: FORM */}
                         <div className="lg:col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit shadow-lg">
                             <h2 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
                                 <span>📝</span> Log New Trade
@@ -175,9 +172,10 @@ function App() {
                                         <button
                                             type="button"
                                             onClick={fetchPrice}
-                                            className="bg-blue-600 hover:bg-blue-500 px-4 rounded font-bold text-sm transition shadow-lg shadow-blue-500/20"
+                                            disabled={isLoadingPrice} // Disable while loading
+                                            className="bg-blue-600 hover:bg-blue-500 px-4 rounded font-bold text-sm transition shadow-lg shadow-blue-500/20 disabled:opacity-50"
                                         >
-                                            🔍
+                                            {isLoadingPrice ? "⏳" : "🔍"}
                                         </button>
                                     </div>
                                 </div>
@@ -214,9 +212,7 @@ function App() {
                             </form>
                         </div>
 
-                        {/* RIGHT COLUMN: DASHBOARD */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* STATS & CHART ROW */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex flex-col justify-center">
                                     <h3 className="text-slate-400 text-sm uppercase font-bold mb-2">Total Trades</h3>
@@ -229,9 +225,10 @@ function App() {
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col items-center">
+                                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center">
                                     <h3 className="text-slate-400 text-xs uppercase font-bold w-full text-left mb-2">Portfolio Allocation</h3>
-                                    <div className="w-full h-48">
+                                    {/* FIX 2: Fixed Height Container */}
+                                    <div className="w-full h-64">
                                         {chartData.length > 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <PieChart>
@@ -239,8 +236,8 @@ function App() {
                                                         data={chartData}
                                                         cx="50%"
                                                         cy="50%"
-                                                        innerRadius={40}
-                                                        outerRadius={60}
+                                                        innerRadius={60}
+                                                        outerRadius={80}
                                                         paddingAngle={5}
                                                         dataKey="value"
                                                     >
@@ -249,10 +246,10 @@ function App() {
                                                         ))}
                                                     </Pie>
                                                     <Tooltip
-                                                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }}
+                                                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
                                                         formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
                                                     />
-                                                    <Legend />
+                                                    <Legend verticalAlign="bottom" height={36}/>
                                                 </PieChart>
                                             </ResponsiveContainer>
                                         ) : (
@@ -262,7 +259,6 @@ function App() {
                                 </div>
                             </div>
 
-                            {/* TABLE */}
                             <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
                                 <div className="p-4 border-b border-slate-700 bg-slate-800/50">
                                     <h3 className="font-bold text-slate-200">Recent Activity</h3>
