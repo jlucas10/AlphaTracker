@@ -29,37 +29,37 @@ app.get("/", async (req: Request, res: Response) => {
 // 2. Create Trade Route (POST) - This was the broken part
 app.post("/trades", async (req: Request, res: Response) => {
     try {
-        console.log("📥 Received trade data:", req.body);
+        // We now expect 'user_id' in the body
+        const { ticker, entry_price, shares, trade_type, setup, user_id } = req.body;
 
-        const { ticker, entry_price, shares, trade_type, setup } = req.body;
-
-        // Validate
-        if (!ticker || !entry_price || !shares) {
-            console.log("❌ Validation failed. Missing fields.");
-            res.status(400).json({ error: "Missing required fields" });
-            return;
-        }
-
-        // --- THE MISSING PART: INSERT INTO DATABASE ---
+        // Add user_id to the SQL query
         const newTrade = await pool.query(
-            "INSERT INTO trades (ticker, entry_price, shares, trade_type, setup) VALUES($1, $2, $3, $4, $5) RETURNING *",
-            [ticker, entry_price, shares, trade_type, setup]
+            "INSERT INTO trades (ticker, entry_price, shares, trade_type, setup, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            [ticker, entry_price, shares, trade_type, setup, user_id]
         );
 
-        console.log("✅ Trade saved to DB:", newTrade.rows[0]);
         res.json(newTrade.rows[0]);
-
     } catch (err) {
-        console.error("❌ Error saving trade:", err);
-        res.status(500).send("Server Error");
+        console.error(err); // Log error
+        res.status(500).send("Error saving trade");
     }
 });
 
 app.get("/trades", async (req: Request, res: Response) => {
     try {
-        const allTrades = await pool.query("SELECT * FROM trades ORDER BY created_at DESC");
-        res.json(allTrades.rows);
-    } catch(err) {
+        const userId = req.query.user_id; // Read the ID from the URL
+
+        if (!userId) {
+            // If no ID is provided, return an empty list (Security)
+            return res.json([]);
+        }
+
+        const result = await pool.query(
+            "SELECT * FROM trades WHERE user_id = $1 ORDER BY created_at DESC",
+            [userId]
+        );
+        res.json(result.rows);
+    } catch (err) {
         console.error(err);
         res.status(500).send("Server Error");
     }

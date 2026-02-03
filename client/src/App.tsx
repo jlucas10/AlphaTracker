@@ -56,8 +56,10 @@ function App() {
     };
 
     const fetchTrades = async () => {
+        if (!user) return; // specific check
         try {
-            const response = await fetch(`${API_URL}/trades`);
+            // We pass the user.id as a query parameter
+            const response = await fetch(`${API_URL}/trades?user_id=${user.id}`);
             const data = await response.json();
             setTrades(data);
             processChartData(data);
@@ -96,11 +98,12 @@ function App() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) return;
         try {
             const response = await fetch(`${API_URL}/trades`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ ...formData, user_id: user.id })
             });
             if (response.ok) {
                 setFormData({...formData, ticker: '', entry_price: '', shares: ''});
