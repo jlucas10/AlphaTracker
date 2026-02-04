@@ -95,4 +95,4 @@ The database is designed with a single-table schema optimized for high-speed ret
 
 ## 📬 Contact
 
-**Josiah Lucas** [LinkedIn](#https://www.linkedin.com/in/josiahjlucas/) | [GitHub](#https://github.com/jlucas10)
+**Josiah Lucas** [LinkedIn](https://www.linkedin.com/in/josiahjlucas/) | [GitHub](https://github.com/jlucas10)
