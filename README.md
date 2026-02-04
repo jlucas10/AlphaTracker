@@ -10,7 +10,7 @@
 **AlphaTracker** is a high-performance, full-stack trading journal designed for serious traders. Built on the **PERN stack** with **TypeScript**, it provides a secure, multi-user environment to log, track, and visualize trade performance with real-time market data integration.
 
 ## 🚀 Live Demo
-[**View Live Demo**](https://alpha-tracker-ui.vercel.app/)
+[**View Live Demo**](https://alpha-tracker-w8vu.vercel.app/)
 
 ---
 
