@@ -1,61 +1,50 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { Pool } from "pg";
 import dotenv from "dotenv";
-import pool from "./db";
-import axios from 'axios';
+import axios from "axios";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001; // Ensuring we use 5001
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// 1. Test Route (GET)
-app.get("/", async (req: Request, res: Response) => {
-    console.log("🔔 A request just hit the root route!");
-    try {
-        const result = await pool.query("SELECT NOW()");
-        console.log("✅ Database query successful");
-        res.send(`AlphaTracker API is running 🚀 DB Time: ${result.rows[0].now}`);
-    } catch (err) {
-        console.error("❌ Database Error:", err);
-        res.status(500).send("Database connection error");
-    }
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
 });
 
-// 2. Create Trade Route (POST) - This was the broken part
-app.post("/trades", async (req: Request, res: Response) => {
+// ==========================================
+// 1. EXTERNAL API ROUTE (FINNHUB)
+// ==========================================
+app.get("/api/price/:ticker", async (req: Request, res: Response) => {
     try {
-        // We now expect 'user_id' in the body
-        const { ticker, entry_price, shares, trade_type, setup, user_id } = req.body;
-
-        // Add user_id to the SQL query
-        const newTrade = await pool.query(
-            "INSERT INTO trades (ticker, entry_price, shares, trade_type, setup, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-            [ticker, entry_price, shares, trade_type, setup, user_id]
+        const { ticker } = req.params;
+        const apiKey = process.env.FINNHUB_KEY;
+        const response = await axios.get(
+            `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`
         );
-
-        res.json(newTrade.rows[0]);
-    } catch (err) {
-        console.error(err); // Log error
-        res.status(500).send("Error saving trade");
+        if (response.data && response.data.c) {
+            res.json({ price: response.data.c });
+        } else {
+            res.status(404).json({ error: "Ticker not found" });
+        }
+    } catch (error) {
+        console.error("Finnhub API Error:", error);
+        res.status(500).json({ error: "Failed to fetch price" });
     }
 });
 
-app.get("/trades", async (req: Request, res: Response) => {
+// ==========================================
+// 2. ACCOUNTS ROUTES (NEW)
+// ==========================================
+app.get("/accounts", async (req: Request, res: Response) => {
     try {
-        const userId = req.query.user_id; // Read the ID from the URL
-
-        if (!userId) {
-            // If no ID is provided, return an empty list (Security)
-            return res.json([]);
-        }
-
+        const userId = req.query.user_id;
+        if (!userId) return res.json([]);
         const result = await pool.query(
-            "SELECT * FROM trades WHERE user_id = $1 ORDER BY created_at DESC",
+            "SELECT * FROM accounts WHERE user_id = $1 ORDER BY created_at DESC",
             [userId]
         );
         res.json(result.rows);
@@ -65,36 +54,127 @@ app.get("/trades", async (req: Request, res: Response) => {
     }
 });
 
-app.delete("/trades/:id", async (req: Request, res: Response) => {
+app.post("/accounts", async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        await pool.query("DELETE FROM trades WHERE trade_id = $1", [id]);
-        res.json({message: "Trade deleted"});
+        const { user_id, account_name, account_type, balance } = req.body;
+        const newAccount = await pool.query(
+            "INSERT INTO accounts (user_id, account_name, account_type, balance) VALUES ($1, $2, $3, $4) RETURNING *",
+            [user_id, account_name, account_type || 'CASH', balance || 0.00]
+        );
+        res.json(newAccount.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error saving account");
+    }
+});
+
+// ==========================================
+// 3. DAILY JOURNAL ROUTES (NEW Notion-Style)
+// ==========================================
+app.get("/journal", async (req: Request, res: Response) => {
+    try {
+        const userId = req.query.user_id;
+        if (!userId) return res.json([]);
+        const result = await pool.query(
+            "SELECT * FROM daily_journal WHERE user_id = $1 ORDER BY date DESC",
+            [userId]
+        );
+        res.json(result.rows);
     } catch (err) {
         console.error(err);
         res.status(500).send("Server Error");
     }
 });
 
-//Get Real-Time Stock Prices
-app.get("/api/price/:ticker", async (req: Request, res: Response) => {
+// This uses an "UPSERT" - if a journal for today exists, it updates it. If not, it creates it.
+app.post("/journal", async (req: Request, res: Response) => {
     try {
-        const { ticker } = req.params;
-        const apiKey = process.env.FINNHUB_KEY;
-
-        // Call Finnhub API
-        const response = await axios.get(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`);
-
-        // Finnhub returns 'c' for Current Price. If it's 0, the ticker might be wrong.
-        const price = response.data.c;
-
-        res.json({ price });
+        const { user_id, date, daily_notes, mood, screenshot_url } = req.body;
+        const newJournal = await pool.query(
+            `INSERT INTO daily_journal (user_id, date, daily_notes, mood, screenshot_url) 
+       VALUES ($1, $2, $3, $4, $5) 
+       ON CONFLICT (user_id, date) 
+       DO UPDATE SET daily_notes = $3, mood = $4, screenshot_url = $5 
+       RETURNING *`,
+            [user_id, date, daily_notes, mood, screenshot_url]
+        );
+        res.json(newJournal.rows[0]);
     } catch (err) {
         console.error(err);
-        res.status(500).send("Error fetching price");
+        res.status(500).send("Error saving journal entry");
     }
 });
 
+// ==========================================
+// 4. TRADES ROUTES (UPGRADED)
+// ==========================================
+app.get("/trades", async (req: Request, res: Response) => {
+    try {
+        const userId = req.query.user_id;
+        const category = req.query.category; // We now filter by category!
+
+        if (!userId) return res.json([]);
+
+        let query = "SELECT * FROM trades WHERE user_id = $1";
+        const params: any[] = [userId];
+
+        if (category) {
+            query += " AND trade_category = $2";
+            params.push(category);
+        }
+
+        query += " ORDER BY created_at DESC";
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server Error");
+    }
+});
+
+app.post("/trades", async (req: Request, res: Response) => {
+    try {
+        const {
+            ticker, entry_price, shares, trade_type, setup, user_id,
+            account_id, trade_category, asset_type, pnl, exit_price, trade_screenshot_url,
+            created_at // <-- 1. We now accept a custom date!
+        } = req.body;
+
+        const newTrade = await pool.query(
+            `INSERT INTO trades
+             (ticker, entry_price, shares, trade_type, setup, user_id, account_id, trade_category, asset_type, pnl, exit_price, trade_screenshot_url, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, COALESCE($13, CURRENT_TIMESTAMP)) RETURNING *`,
+            [
+                ticker, entry_price, shares, trade_type, setup, user_id,
+                account_id || null,
+                trade_category || 'INVESTMENT',
+                asset_type || 'STOCK',
+                pnl || null,
+                exit_price || null,
+                trade_screenshot_url || null,
+                created_at || null // <-- 2. Save it to the database
+            ]
+        );
+        res.json(newTrade.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error saving trade");
+    }
+});
+
+app.delete("/trades/:id", async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await pool.query("DELETE FROM trades WHERE trade_id = $1", [id]);
+        res.json({ message: "Trade deleted" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server Error");
+    }
+});
+
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
