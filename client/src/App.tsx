@@ -10,23 +10,33 @@ function App() {
         <BrowserRouter>
             {/* STATE 1: SIGNED OUT (Landing Page - LIGHT THEME) */}
             <SignedOut>
-                <div className="min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col items-center justify-center p-4">
-                    <div className="bg-white p-12 md:p-16 rounded-3xl shadow-sm border border-gray-200 flex flex-col items-center text-center max-w-2xl">
-                        <div className="w-16 h-16 bg-gray-900 text-white rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                            <span className="text-3xl">📈</span>
+                <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col items-center justify-center p-6">
+                    {/* Subtle Background Element */}
+                    <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)] -z-10" />
+
+                    <div className="flex flex-col items-center text-center max-w-sm">
+                        <div className="mb-8">
+                            <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center shadow-sm mx-auto">
+                                <span className="text-xl">📈</span>
+                            </div>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight mb-6">
+
+                        <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-3">
                             AlphaTracker
                         </h1>
-                        <p className="text-gray-500 text-lg md:text-xl max-w-md mb-10 leading-relaxed">
-                            The professional trading journal for serious traders. Track your edge, manage your capital, and scale your accounts.
+
+                        <p className="text-gray-500 font-medium mb-10 leading-relaxed">
+                            Master your edge. <br />
+                            Scale your capital.
                         </p>
+
                         <SignInButton mode="modal">
-                            <button className="bg-gray-900 hover:bg-gray-800 text-white px-10 py-4 rounded-xl font-bold text-lg transition shadow-md transform hover:-translate-y-1">
+                            <button className="w-full bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-bold transition-all active:scale-95 shadow-lg shadow-gray-200">
                                 Get Started 🚀
                             </button>
                         </SignInButton>
-                        <p className="mt-6 text-sm text-gray-400 font-medium uppercase tracking-widest">
+
+                        <p className="mt-8 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
                             Secure Login via Clerk
                         </p>
                     </div>
