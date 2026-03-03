@@ -177,8 +177,24 @@ app.post("/trades", async (req: Request, res: Response) => {
 app.delete("/trades/:id", async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+
+        // Find the trade so we know how much money to reverse
+        const tradeResult = await pool.query("SELECT pnl, account_id FROM trades WHERE trade_id = $1", [id]);
+        const trade = tradeResult.rows[0];
+
+        // Delete the trade from the database
         await pool.query("DELETE FROM trades WHERE trade_id = $1", [id]);
-        res.json({ message: "Trade deleted" });
+
+        // If it had an account and a P&L, reverse the math
+        // We SUBTRACT the P&L to undo what we originally added.
+        if (trade && trade.account_id && trade.pnl) {
+            await pool.query(
+                "UPDATE accounts SET balance = balance - $1 WHERE account_id = $2",
+                [Number(trade.pnl), trade.account_id]
+            );
+        }
+
+        res.json({ message: "Trade deleted and balance reversed" });
     } catch (err) {
         console.error(err);
         res.status(500).send("Server Error");

@@ -10,7 +10,7 @@ interface JournalEntry {
 
 interface Trade {
     trade_id: number;
-    account_id?: number; // NEW: Track which account took the trade
+    account_id?: number;
     ticker: string;
     entry_price: string;
     exit_price: string;
@@ -39,16 +39,15 @@ export default function TradingJournal() {
     const [isUploadingJournal, setIsUploadingJournal] = useState(false);
 
     const [dayTrades, setDayTrades] = useState<Trade[]>([]);
-    const [accounts, setAccounts] = useState<Account[]>([]); // NEW: Store user's accounts
+    const [accounts, setAccounts] = useState<Account[]>([]);
 
     const [tradeForm, setTradeForm] = useState({
-        account_id: '', // NEW: Selected account
+        account_id: '',
         ticker: '', asset_type: 'FUTURE', trade_type: 'LONG', setup: 'Breakout',
         shares: '', entry_price: '', exit_price: '', pnl: '', trade_screenshot_url: ''
     });
     const [isUploadingTrade, setIsUploadingTrade] = useState(false);
 
-    // Fetch Accounts once when the user loads
     useEffect(() => {
         if (!user) return;
         const fetchAccounts = async () => {
@@ -56,7 +55,6 @@ export default function TradingJournal() {
                 const res = await fetch(`${API_URL}/accounts?user_id=${user.id}`);
                 const data = await res.json();
                 setAccounts(data);
-                // Auto-select the first account if they have one!
                 if (data.length > 0) {
                     setTradeForm(prev => ({ ...prev, account_id: data[0].account_id.toString() }));
                 }
@@ -67,7 +65,6 @@ export default function TradingJournal() {
         fetchAccounts();
     }, [user, API_URL]);
 
-    // Fetch Journal & Trades when date changes
     useEffect(() => {
         if (!user) return;
         fetchJournalData();
@@ -169,11 +166,10 @@ export default function TradingJournal() {
                     user_id: user.id,
                     trade_category: 'DAY_TRADE',
                     created_at: selectedDate,
-                    account_id: tradeForm.account_id ? parseInt(tradeForm.account_id) : null // Securely pass the account ID
+                    account_id: tradeForm.account_id ? parseInt(tradeForm.account_id) : null
                 })
             });
             if (res.ok) {
-                // Keep the account selected, but reset the rest of the form!
                 setTradeForm(prev => ({
                     ...prev, ticker: '', asset_type: 'FUTURE', trade_type: 'LONG', setup: 'Breakout', shares: '', entry_price: '', exit_price: '', pnl: '', trade_screenshot_url: ''
                 }));
@@ -181,6 +177,22 @@ export default function TradingJournal() {
             }
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    // NEW: Delete Trade Function
+    const deleteTrade = async (id: number) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this trade? This will reverse the P&L from your account.");
+        if (!confirmDelete) return;
+
+        try {
+            const res = await fetch(`${API_URL}/trades/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                // Instantly remove it from the screen
+                setDayTrades(prev => prev.filter(trade => trade.trade_id !== id));
+            }
+        } catch (error) {
+            console.error("Error deleting trade:", error);
         }
     };
 
@@ -278,8 +290,6 @@ export default function TradingJournal() {
                             ⚡ Log Execution
                         </h2>
                         <form onSubmit={handleTradeSubmit} className="space-y-4">
-
-                            {/* NEW: Account Dropdown */}
                             <div>
                                 <select
                                     value={tradeForm.account_id}
@@ -352,23 +362,22 @@ export default function TradingJournal() {
                                 <thead className="bg-slate-900/50 text-slate-400 uppercase text-xs">
                                 <tr>
                                     <th className="p-3">Asset</th>
-                                    {/* NEW: Account Column Header */}
                                     <th className="p-3">Account</th>
                                     <th className="p-3">In / Out</th>
                                     <th className="p-3 text-right">P&L</th>
                                     <th className="p-3 text-center">Chart</th>
+                                    {/* NEW: Action Column */}
+                                    <th className="p-3 text-center">Act</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-700">
                                 {displayedTrades.map((trade) => {
-                                    // NEW: Find the account name to display in the table
                                     const linkedAccount = accounts.find(a => a.account_id === trade.account_id);
                                     return (
                                         <tr key={trade.trade_id} className="hover:bg-slate-700/50 transition">
                                             <td className="p-3 font-bold text-white">
                                                 {trade.ticker} <span className="text-xs text-slate-500 font-normal">({trade.asset_type})</span>
                                             </td>
-                                            {/* NEW: Account Column Data */}
                                             <td className="p-3 text-xs text-slate-400">
                                                 {linkedAccount ? linkedAccount.account_name : '-'}
                                             </td>
@@ -385,12 +394,22 @@ export default function TradingJournal() {
                                                     <span className="text-slate-600">-</span>
                                                 )}
                                             </td>
+                                            {/* NEW: Delete Button */}
+                                            <td className="p-3 text-center">
+                                                <button
+                                                    onClick={() => deleteTrade(trade.trade_id)}
+                                                    className="text-slate-500 hover:text-red-400 transition"
+                                                    title="Delete Trade"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </td>
                                         </tr>
                                     )
                                 })}
                                 {displayedTrades.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="p-6 text-center text-slate-500 italic">No trades logged for this date.</td>
+                                        <td colSpan={6} className="p-6 text-center text-slate-500 italic">No trades logged for this date.</td>
                                     </tr>
                                 )}
                                 </tbody>
