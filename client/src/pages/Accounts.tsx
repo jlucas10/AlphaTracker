@@ -47,20 +47,20 @@ export default function Accounts() {
         }
     };
 
-    // Calculate Total Net Worth
     const totalBalance = accounts.reduce((sum, acc) => sum + Number(acc.balance), 0);
+    const inputStyle = "w-full bg-white border border-gray-300 rounded p-3 text-sm outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition text-gray-900";
 
     return (
         <div className="p-8 max-w-6xl mx-auto space-y-8">
             {/* Top Stat Banner */}
-            <div className="bg-slate-800 p-8 rounded-xl border border-slate-700 shadow-lg flex justify-between items-center">
+            <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">My Accounts</h1>
-                    <p className="text-slate-400">Manage your capital across brokerages and prop firms.</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">My Accounts</h1>
+                    <p className="text-gray-500">Manage your capital across brokerages and prop firms.</p>
                 </div>
                 <div className="text-right">
-                    <p className="text-sm font-bold text-slate-400 uppercase mb-1">Total Capital</p>
-                    <p className="text-5xl font-mono text-emerald-400 font-bold">
+                    <p className="text-sm font-bold text-gray-400 uppercase mb-1">Total Capital</p>
+                    <p className="text-5xl font-mono text-gray-900 font-bold tracking-tight">
                         ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                 </div>
@@ -68,27 +68,27 @@ export default function Accounts() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Form to Add Account */}
-                <div className="lg:col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg h-fit">
-                    <h2 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
+                <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-fit">
+                    <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
                         🏦 Add Account
                     </h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="text-xs text-slate-400 uppercase font-bold">Account Name</label>
+                            <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Account Name</label>
                             <input
                                 value={form.account_name}
                                 onChange={(e) => setForm({...form, account_name: e.target.value})}
                                 placeholder="e.g. Apex 50k Eval"
-                                className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none focus:border-blue-500 transition"
+                                className={inputStyle}
                                 required
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 uppercase font-bold">Account Type</label>
+                            <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Account Type</label>
                             <select
                                 value={form.account_type}
                                 onChange={(e) => setForm({...form, account_type: e.target.value})}
-                                className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none focus:border-blue-500 transition"
+                                className={inputStyle}
                             >
                                 <option value="CASH">Cash (Personal)</option>
                                 <option value="MARGIN">Margin (Personal)</option>
@@ -97,17 +97,17 @@ export default function Accounts() {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 uppercase font-bold">Starting Balance ($)</label>
+                            <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Starting Balance ($)</label>
                             <input
                                 type="number" step="0.01"
                                 value={form.balance}
                                 onChange={(e) => setForm({...form, balance: e.target.value})}
                                 placeholder="50000.00"
-                                className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none font-mono focus:border-blue-500 transition"
+                                className={`${inputStyle} font-mono`}
                                 required
                             />
                         </div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-blue-500/20">
+                        <button type="submit" className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition shadow-sm">
                             Create Account
                         </button>
                     </form>
@@ -116,18 +116,18 @@ export default function Accounts() {
                 {/* List of Accounts */}
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max">
                     {accounts.map((acc) => (
-                        <div key={acc.account_id} className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg hover:border-slate-500 transition">
+                        <div key={acc.account_id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition group">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="font-bold text-lg text-white">{acc.account_name}</h3>
-                                    <span className="text-xs font-bold text-slate-400 bg-slate-900 px-2 py-1 rounded mt-1 inline-block">
+                                    <h3 className="font-bold text-lg text-gray-900">{acc.account_name}</h3>
+                                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded mt-1 inline-block">
                                         {acc.account_type.replace('_', ' ')}
                                     </span>
                                 </div>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-700">
-                                <p className="text-slate-400 text-sm mb-1">Current Balance</p>
-                                <p className="text-2xl font-mono text-white font-bold">
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                <p className="text-gray-400 text-sm mb-1">Current Balance</p>
+                                <p className="text-2xl font-mono text-gray-900 font-bold">
                                     ${Number(acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </p>
                             </div>
@@ -135,9 +135,9 @@ export default function Accounts() {
                     ))}
 
                     {accounts.length === 0 && (
-                        <div className="col-span-2 p-12 text-center border-2 border-dashed border-slate-700 rounded-xl">
-                            <p className="text-slate-500 text-lg">No accounts added yet.</p>
-                            <p className="text-slate-600 text-sm mt-2">Add your first brokerage or prop firm account to track your capital.</p>
+                        <div className="col-span-2 p-12 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+                            <p className="text-gray-500 text-lg font-medium">No accounts added yet.</p>
+                            <p className="text-gray-400 text-sm mt-1">Add your first brokerage or prop firm account to track your capital.</p>
                         </div>
                     )}
                 </div>

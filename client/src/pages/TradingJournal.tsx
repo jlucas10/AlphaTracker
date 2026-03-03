@@ -180,7 +180,6 @@ export default function TradingJournal() {
         }
     };
 
-    // NEW: Delete Trade Function
     const deleteTrade = async (id: number) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this trade? This will reverse the P&L from your account.");
         if (!confirmDelete) return;
@@ -188,7 +187,6 @@ export default function TradingJournal() {
         try {
             const res = await fetch(`${API_URL}/trades/${id}`, { method: 'DELETE' });
             if (res.ok) {
-                // Instantly remove it from the screen
                 setDayTrades(prev => prev.filter(trade => trade.trade_id !== id));
             }
         } catch (error) {
@@ -201,29 +199,32 @@ export default function TradingJournal() {
         return trade.created_at.substring(0, 10) === selectedDate;
     });
 
+    // Helper class for standardized inputs
+    const inputStyle = "bg-white border border-gray-300 rounded p-3 text-sm outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition text-gray-900";
+
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            <div className="flex items-center justify-between bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <div className="flex items-center justify-between bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                     📅 Daily Review
                 </h1>
                 <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-slate-900 border border-slate-600 text-white rounded-lg p-3 font-bold outline-none focus:border-blue-500 transition cursor-pointer"
+                    className="bg-white border border-gray-300 text-gray-900 rounded-lg p-3 font-bold outline-none focus:border-gray-900 transition cursor-pointer"
                 />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* NOTION STYLE JOURNAL */}
-                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex flex-col h-[750px] overflow-y-auto">
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col h-[750px] overflow-y-auto">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-blue-400">📝 Trading Journal</h2>
+                        <h2 className="text-xl font-bold text-gray-900">📝 Trading Journal</h2>
                         <select
                             value={journal.mood}
                             onChange={(e) => setJournal({...journal, mood: e.target.value})}
-                            className="bg-slate-900 border border-slate-600 rounded p-2 text-sm outline-none"
+                            className="bg-white border border-gray-300 rounded p-2 text-sm outline-none focus:border-gray-900 text-gray-900"
                         >
                             <option value="Flow State 🧘‍♂️">Flow State 🧘‍♂️</option>
                             <option value="Neutral 😐">Neutral 😐</option>
@@ -233,14 +234,14 @@ export default function TradingJournal() {
                     </div>
 
                     <div className="mb-4 space-y-2">
-                        <label className="block text-xs text-slate-400 uppercase font-bold">Daily Chart Image</label>
+                        <label className="block text-xs text-gray-500 uppercase font-bold">Daily Chart Image</label>
 
                         {journal.screenshot_url ? (
-                            <div className="relative group rounded-lg overflow-hidden border border-slate-700 mb-2">
+                            <div className="relative group rounded-lg overflow-hidden border border-gray-200 mb-2">
                                 <img src={journal.screenshot_url} alt="Daily Recap" className="w-full h-48 object-cover" />
                                 <button
                                     onClick={() => setJournal({...journal, screenshot_url: ''})}
-                                    className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition"
+                                    className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition shadow"
                                 >
                                     🗑️ Remove
                                 </button>
@@ -252,32 +253,32 @@ export default function TradingJournal() {
                                     placeholder="Paste TradingView Link here..."
                                     value={journal.screenshot_url}
                                     onChange={(e) => setJournal({...journal, screenshot_url: e.target.value})}
-                                    className="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm outline-none focus:border-blue-500 text-white"
+                                    className={`flex-1 ${inputStyle} p-2`}
                                 />
-                                <span className="text-slate-500 self-center text-sm">or</span>
+                                <span className="text-gray-400 self-center text-sm">or</span>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={(e) => handleImageUpload(e, 'journal')}
                                     disabled={isUploadingJournal}
-                                    className="w-28 text-sm text-slate-400 file:py-2 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                                    className="w-28 text-sm text-gray-500 file:py-2 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"
                                 />
                             </div>
                         )}
-                        {isUploadingJournal && <span className="text-xs text-blue-400">Uploading... ⏳</span>}
+                        {isUploadingJournal && <span className="text-xs text-gray-500">Uploading... ⏳</span>}
                     </div>
 
                     <textarea
                         value={journal.daily_notes}
                         onChange={(e) => setJournal({...journal, daily_notes: e.target.value})}
                         placeholder="Pre-market plan, psychological state, market observations..."
-                        className="flex-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-4 resize-none outline-none focus:border-blue-500 transition text-slate-300 min-h-[200px]"
+                        className="flex-1 w-full bg-white border border-gray-300 rounded-lg p-4 resize-none outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition text-gray-700 min-h-[200px]"
                     />
 
                     <button
                         onClick={handleJournalSave}
                         disabled={isSavingJournal}
-                        className="mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition disabled:opacity-50 shadow-lg shadow-blue-500/20 shrink-0"
+                        className="mt-4 w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition disabled:opacity-50 shadow-sm shrink-0"
                     >
                         {isSavingJournal ? "Saving..." : "Save Journal Entry"}
                     </button>
@@ -285,8 +286,8 @@ export default function TradingJournal() {
 
                 <div className="flex flex-col gap-6">
                     {/* TRADE EXECUTION FORM */}
-                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-                        <h2 className="text-xl font-bold mb-4 text-emerald-400 flex items-center gap-2">
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
                             ⚡ Log Execution
                         </h2>
                         <form onSubmit={handleTradeSubmit} className="space-y-4">
@@ -294,7 +295,7 @@ export default function TradingJournal() {
                                 <select
                                     value={tradeForm.account_id}
                                     onChange={(e) => setTradeForm({...tradeForm, account_id: e.target.value})}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none focus:border-blue-500 text-white"
+                                    className={`w-full ${inputStyle}`}
                                 >
                                     <option value="">-- No Account Linked --</option>
                                     {accounts.map(acc => (
@@ -306,99 +307,97 @@ export default function TradingJournal() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
-                                <input name="ticker" value={tradeForm.ticker} onChange={(e) => setTradeForm({...tradeForm, ticker: e.target.value.toUpperCase()})} placeholder="Ticker (NQ)" className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none" required />
-                                <select name="asset_type" value={tradeForm.asset_type} onChange={(e) => setTradeForm({...tradeForm, asset_type: e.target.value})} className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none">
+                                <input name="ticker" value={tradeForm.ticker} onChange={(e) => setTradeForm({...tradeForm, ticker: e.target.value.toUpperCase()})} placeholder="Ticker (NQ)" className={inputStyle} required />
+                                <select name="asset_type" value={tradeForm.asset_type} onChange={(e) => setTradeForm({...tradeForm, asset_type: e.target.value})} className={inputStyle}>
                                     <option value="FUTURE">Future</option>
                                     <option value="OPTION">Option</option>
                                     <option value="STOCK">Stock</option>
                                 </select>
-                                <select name="trade_type" value={tradeForm.trade_type} onChange={(e) => setTradeForm({...tradeForm, trade_type: e.target.value})} className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none">
+                                <select name="trade_type" value={tradeForm.trade_type} onChange={(e) => setTradeForm({...tradeForm, trade_type: e.target.value})} className={inputStyle}>
                                     <option value="LONG">Long</option>
                                     <option value="SHORT">Short</option>
                                 </select>
                             </div>
 
                             <div className="grid grid-cols-4 gap-3">
-                                <input type="number" value={tradeForm.shares} onChange={(e) => setTradeForm({...tradeForm, shares: e.target.value})} placeholder="Size/Qty" className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none" required />
-                                <input type="number" step="0.01" value={tradeForm.entry_price} onChange={(e) => setTradeForm({...tradeForm, entry_price: e.target.value})} placeholder="Entry" className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none" required />
-                                <input type="number" step="0.01" value={tradeForm.exit_price} onChange={(e) => setTradeForm({...tradeForm, exit_price: e.target.value})} placeholder="Exit" className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none" />
-                                <input type="number" step="0.01" value={tradeForm.pnl} onChange={(e) => setTradeForm({...tradeForm, pnl: e.target.value})} placeholder="P&L ($)" className="bg-slate-900 border border-slate-600 rounded p-3 text-sm outline-none" />
+                                <input type="number" value={tradeForm.shares} onChange={(e) => setTradeForm({...tradeForm, shares: e.target.value})} placeholder="Size/Qty" className={inputStyle} required />
+                                <input type="number" step="0.01" value={tradeForm.entry_price} onChange={(e) => setTradeForm({...tradeForm, entry_price: e.target.value})} placeholder="Entry" className={inputStyle} required />
+                                <input type="number" step="0.01" value={tradeForm.exit_price} onChange={(e) => setTradeForm({...tradeForm, exit_price: e.target.value})} placeholder="Exit" className={inputStyle} />
+                                <input type="number" step="0.01" value={tradeForm.pnl} onChange={(e) => setTradeForm({...tradeForm, pnl: e.target.value})} placeholder="P&L ($)" className={inputStyle} />
                             </div>
 
-                            <div className="flex flex-col gap-2 border border-slate-700 bg-slate-900 rounded p-3">
-                                <label className="text-xs text-slate-400 font-bold whitespace-nowrap">📸 Setup Chart:</label>
+                            <div className="flex flex-col gap-2 border border-gray-200 bg-gray-50 rounded p-3">
+                                <label className="text-xs text-gray-500 font-bold whitespace-nowrap">📸 Setup Chart:</label>
                                 <div className="flex gap-2 items-center">
                                     <input
                                         type="text"
                                         placeholder="Paste TradingView Link here..."
                                         value={tradeForm.trade_screenshot_url}
                                         onChange={(e) => setTradeForm({...tradeForm, trade_screenshot_url: e.target.value})}
-                                        className="flex-1 bg-slate-800 border border-slate-600 rounded p-2 text-xs outline-none focus:border-blue-500 text-white"
+                                        className="flex-1 bg-white border border-gray-300 rounded p-2 text-xs outline-none focus:border-gray-900 text-gray-900"
                                     />
-                                    <span className="text-slate-500 text-xs">or</span>
+                                    <span className="text-gray-400 text-xs">or</span>
                                     <input
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => handleImageUpload(e, 'trade')}
                                         disabled={isUploadingTrade}
-                                        className="w-24 text-xs text-slate-400 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-300 hover:file:bg-slate-600 cursor-pointer"
+                                        className="w-24 text-xs text-gray-500 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 cursor-pointer"
                                     />
                                 </div>
-                                {isUploadingTrade && <span className="text-xs text-blue-400">Uploading... ⏳</span>}
+                                {isUploadingTrade && <span className="text-xs text-gray-500">Uploading... ⏳</span>}
                             </div>
 
-                            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-emerald-500/20">
+                            <button type="submit" className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition shadow-sm">
                                 Add Execution
                             </button>
                         </form>
                     </div>
 
-                    <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-lg flex-1 overflow-hidden">
-                        <div className="p-4 border-b border-slate-700 bg-slate-800/50">
-                            <h3 className="font-bold text-slate-200">Today's Executions</h3>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 bg-gray-50">
+                            <h3 className="font-bold text-gray-900">Today's Executions</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <thead className="bg-slate-900/50 text-slate-400 uppercase text-xs">
+                                <thead className="bg-white text-gray-500 uppercase text-xs border-b border-gray-200">
                                 <tr>
                                     <th className="p-3">Asset</th>
                                     <th className="p-3">Account</th>
                                     <th className="p-3">In / Out</th>
                                     <th className="p-3 text-right">P&L</th>
                                     <th className="p-3 text-center">Chart</th>
-                                    {/* NEW: Action Column */}
                                     <th className="p-3 text-center">Act</th>
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-700">
+                                <tbody className="divide-y divide-gray-100">
                                 {displayedTrades.map((trade) => {
                                     const linkedAccount = accounts.find(a => a.account_id === trade.account_id);
                                     return (
-                                        <tr key={trade.trade_id} className="hover:bg-slate-700/50 transition">
-                                            <td className="p-3 font-bold text-white">
-                                                {trade.ticker} <span className="text-xs text-slate-500 font-normal">({trade.asset_type})</span>
+                                        <tr key={trade.trade_id} className="hover:bg-gray-50 transition">
+                                            <td className="p-3 font-bold text-gray-900">
+                                                {trade.ticker} <span className="text-xs text-gray-500 font-normal">({trade.asset_type})</span>
                                             </td>
-                                            <td className="p-3 text-xs text-slate-400">
+                                            <td className="p-3 text-xs text-gray-500">
                                                 {linkedAccount ? linkedAccount.account_name : '-'}
                                             </td>
-                                            <td className="p-3 font-mono text-slate-300">{trade.entry_price} → {trade.exit_price || '-'}</td>
-                                            <td className={`p-3 text-right font-bold ${Number(trade.pnl) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            <td className="p-3 font-mono text-gray-700">{trade.entry_price} → {trade.exit_price || '-'}</td>
+                                            <td className={`p-3 text-right font-bold ${Number(trade.pnl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                 ${trade.pnl || '0.00'}
                                             </td>
                                             <td className="p-3 text-center">
                                                 {trade.trade_screenshot_url ? (
-                                                    <a href={trade.trade_screenshot_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                                    <a href={trade.trade_screenshot_url} target="_blank" rel="noopener noreferrer" className="text-gray-900 underline hover:text-gray-600">
                                                         View
                                                     </a>
                                                 ) : (
-                                                    <span className="text-slate-600">-</span>
+                                                    <span className="text-gray-400">-</span>
                                                 )}
                                             </td>
-                                            {/* NEW: Delete Button */}
                                             <td className="p-3 text-center">
                                                 <button
                                                     onClick={() => deleteTrade(trade.trade_id)}
-                                                    className="text-slate-500 hover:text-red-400 transition"
+                                                    className="text-gray-400 hover:text-red-500 transition"
                                                     title="Delete Trade"
                                                 >
                                                     🗑️
@@ -409,7 +408,7 @@ export default function TradingJournal() {
                                 })}
                                 {displayedTrades.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="p-6 text-center text-slate-500 italic">No trades logged for this date.</td>
+                                        <td colSpan={6} className="p-6 text-center text-gray-400 italic">No trades logged for this date.</td>
                                     </tr>
                                 )}
                                 </tbody>
