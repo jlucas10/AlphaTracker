@@ -138,9 +138,10 @@ app.post("/trades", async (req: Request, res: Response) => {
         const {
             ticker, entry_price, shares, trade_type, setup, user_id,
             account_id, trade_category, asset_type, pnl, exit_price, trade_screenshot_url,
-            created_at // <-- 1. We now accept a custom date!
+            created_at
         } = req.body;
 
+        // 1. Save the trade execution
         const newTrade = await pool.query(
             `INSERT INTO trades
              (ticker, entry_price, shares, trade_type, setup, user_id, account_id, trade_category, asset_type, pnl, exit_price, trade_screenshot_url, created_at)
@@ -153,9 +154,19 @@ app.post("/trades", async (req: Request, res: Response) => {
                 pnl || null,
                 exit_price || null,
                 trade_screenshot_url || null,
-                created_at || null // <-- 2. Save it to the database
+                created_at || null
             ]
         );
+
+        // 2. Automatically update the linked Account's Balance
+        if (account_id && pnl) {
+            // We add the P&L to the current balance. (If P&L is negative, adding a negative subtracts it).
+            await pool.query(
+                `UPDATE accounts SET balance = balance + $1 WHERE account_id = $2`,
+                [Number(pnl), account_id]
+            );
+        }
+
         res.json(newTrade.rows[0]);
     } catch (err) {
         console.error(err);
