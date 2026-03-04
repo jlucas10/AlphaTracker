@@ -7,7 +7,7 @@
 **AlphaTracker** is a premium, full-stack trading journal and portfolio management suite. Designed for professional traders, it combines high-performance data logging with visual chart analysis and automated capital management.
 
 ## 🚀 Live Demo
-[View AlphaTracker Live](https://alpha-tracker-w8vu-a6ckdefp1-jos-projects-689ef5f3.vercel.app/)
+[View AlphaTracker Live](https://alpha-tracker-w8vu.vercel.app)
 
 ---
 
