@@ -1,88 +1,80 @@
 # AlphaTracker 📈
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D%2016.0.0-brightgreen)
+![Node](https://img.shields.io/badge/node-%3E%3D%2018.0.0-brightgreen)
 ![React](https://img.shields.io/badge/react-%5E18.2.0-blue)
+![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL-blue)
 
-**AlphaTracker** is a high-performance, full-stack day trading journal designed for speed and data integrity. Built on the PERN stack, it allows traders to log, track, and analyze their trade performance with sub-100ms latency.
+**AlphaTracker** is a premium, full-stack trading journal and portfolio management suite. Designed for professional traders, it combines high-performance data logging with visual chart analysis and automated capital management.
 
 ## 🚀 Live Demo
-[View Live Demo](https://alpha-tracker-w8vu-a6ckdefp1-jos-projects-689ef5f3.vercel.app/) ---
-
-## 🏗 Architecture & Tech Stack
-
-AlphaTracker utilizes a microservices-based architecture deployed on **Vercel**, separating the client-side dashboard from the server-side logic to ensure security and scalability.
-
-### **The Stack (PERN)**
-* **Frontend:** [React.js](https://reactjs.org/) (Hooks, Context API)
-* **Backend:** [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/)
-* **Database:** [PostgreSQL](https://www.postgresql.org/) via [Neon](https://neon.tech/) (Serverless)
-* **External Data:** [Finnhub API](https://finnhub.io/) (Real-time stock pricing)
+[View AlphaTracker Live](https://alpha-tracker-w8vu-a6ckdefp1-jos-projects-689ef5f3.vercel.app/)
 
 ---
 
-## ✨ Key Features
+## ✨ Advanced Features
 
-* **⚡ High-Performance CRUD:** Optimized backend logic enables trade logging and retrieval with **<100ms latency**.
-* **🔒 Secure Proxy Server:** Custom server-side proxy routes handle all interactions with the Finnhub API. This architecture strictly prevents API key exposure on the client-side.
-* **🗄️ Normalized Data Schema:** A fully normalized relational schema on Neon ensures zero data redundancy and maintains ACID compliance for complex transaction records.
-* **🌍 Real-Time Market Data:** Seamless integration with financial APIs to pull live price context for every trade logged.
-
----
-
-## 🛠 Getting Started
-
-Follow these steps to set up the project locally.
-
-### Prerequisites
-* Node.js (v16+)
-* npm or yarn
-* PostgreSQL database URI (local or Neon)
-
-### Installation
-
-1.  **Clone the repo**
-    ```sh
-    git clone [https://github.com/yourusername/alphatracker.git](https://github.com/yourusername/alphatracker.git)
-    cd alphatracker
-    ```
-
-2.  **Install dependencies** (Root directory handles both via workspaces, or install separately)
-    ```sh
-    cd client && npm install
-    cd ../server && npm install
-    ```
-
-3.  **Configure Environment Variables**
-    Create a `.env` file in the `/server` directory:
-    ```env
-    PORT=5000
-    DATABASE_URL=postgresql://user:password@endpoint.neon.tech/neondb
-    FINNHUB_API_KEY=your_finnhub_key_here
-    CLIENT_URL=http://localhost:3000
-    ```
-
-4.  **Run the App**
-    * **Server:** `cd server && npm start`
-    * **Client:** `cd client && npm start`
+* **📊 Dynamic Capital Sync:** Automated backend triggers that calculate and update brokerage balances in real-time as trades are logged or deleted.
+* **📝 Notion-Style Journal:** A rich-text trading journal with integrated "Mood Tracking" and market observation logs.
+* **📸 Hybrid Visual Logs:** Supports direct screenshot uploads via **Cloudinary API** and instant embedding of **TradingView** chart links.
+* **🏦 Multi-Account Management:** Track capital across various sources (Prop Firms, Personal Cash, Crypto) in a unified interface.
+* **🔒 Enterprise Auth:** Secure, modern authentication powered by **Clerk** with user-specific data isolation.
+* **🎨 Premium UI/UX:** A minimalist "Light Mode" interface built with **Tailwind CSS**, optimized for long-session readability and data clarity.
 
 ---
 
-## 🧩 Database Schema
+## 🏗 Tech Stack
 
-The database is designed with normalization in mind to handle scale. Key tables include:
-* `users` (Auth & Profile)
-* `trades` (Core transaction data)
-* `assets` (Ticker symbols and sector info)
+### **Frontend**
+* **React.js** (Functional Components, Hooks)
+* **Tailwind CSS** (Custom theme & Responsive Design)
+* **Recharts** (Portfolio allocation & Data visualization)
+* **Clerk Auth** (Identity & Session management)
 
+### **Backend**
+* **Node.js & Express** (RESTful API)
+* **PostgreSQL (Neon)** (Relational data & ACID compliance)
+* **Cloudinary SDK** (Image transformation & Hosting)
+* **Finnhub API** (Market data proxy)
 
 ---
 
-## 🔮 Future Roadmap
+## 🗄️ Database Schema (Normalized)
 
-* [ ] Implementation of WebSocket for live P&L updates.
-* [ ] Advanced charting using Recharts or D3.js.
-* [ ] OAuth 2.0 integration (Google/GitHub Login).
+* **Users:** Managed via Clerk with relational mapping to trade data.
+* **Accounts:** Stores capital balances and brokerage types.
+* **Trades:** Relational records linking executions to specific accounts and time zones.
+* **Journal:** Daily recap logs with associated screenshot URLs and market sentiment data.
+
+---
+
+## 🛠 Setup & Installation
+
+1. **Clone & Install**
+```bash
+git clone [https://github.com/jlucas10/AlphaTracker.git](https://github.com/jlucas10/AlphaTracker.git)
+cd client && npm install
+cd ../server && npm install
+```
+
+### 2. Environment Configuration
+
+Create a .env file in the **/server** directory:
+
+DATABASE_URL=your_neon_postgres_url
+CLERK_SECRET_KEY=your_clerk_key
+FINNHUB_API_KEY=your_finnhub_key
+
+Create a .env file in the **/client** directory:
+
+VITE_CLOUDINARY_CLOUD_NAME=your_name
+VITE_CLOUDINARY_UPLOAD_PRESET=alpha_tracker
+
+### 3. Run Dev Environment
+
+* **Server:** `npm run dev` (Port 5001)
+* **Client:** `npm run dev` (Port 5173)
+
+---
 
 ## 📬 Contact
 
