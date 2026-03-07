@@ -158,46 +158,60 @@ app.post("/trades", async (req: Request, res: Response) => {
             ]
         );
 
-        // 2. Automatically update the linked Account's Balance
-        if (account_id && pnl) {
-            // We add the P&L to the current balance. (If P&L is negative, adding a negative subtracts it).
-            await pool.query(
-                `UPDATE accounts SET balance = balance + $1 WHERE account_id = $2`,
-                [Number(pnl), account_id]
-            );
+        // 2. Automatically update the linked Account's Cash Balance
+        if (account_id) {
+            if (trade_category === 'INVESTMENT') {
+                // For Investments: Deduct the total cost from Cash (Buying Power)
+                const totalCost = Number(entry_price) * Number(shares);
+                await pool.query(
+                    `UPDATE accounts SET balance = balance - $1 WHERE account_id = $2`,
+                    [totalCost, account_id]
+                );
+            } else if (trade_category === 'DAY_TRADE' && pnl) {
+                // For Day Trades: Add/Subtract the realized P&L directly
+                await pool.query(
+                    `UPDATE accounts SET balance = balance + $1 WHERE account_id = $2`,
+                    [Number(pnl), account_id]
+                );
+            }
         }
 
         res.json(newTrade.rows[0]);
     } catch (err) {
-        console.error(err);
+        console.error("Error in /trades POST:", err);
         res.status(500).send("Error saving trade");
     }
 });
 
 app.delete("/trades/:id", async (req: Request, res: Response) => {
+    const { id } = req.params;
     try {
-        const { id } = req.params;
+        // 1. Get the trade details first so we know what to refund
+        const trade = await pool.query("SELECT * FROM trades WHERE trade_id = $1", [id]);
 
-        // Find the trade so we know how much money to reverse
-        const tradeResult = await pool.query("SELECT pnl, account_id FROM trades WHERE trade_id = $1", [id]);
-        const trade = tradeResult.rows[0];
+        if (trade.rows.length === 0) return res.status(404).send("Trade not found");
 
-        // Delete the trade from the database
-        await pool.query("DELETE FROM trades WHERE trade_id = $1", [id]);
+        const { account_id, trade_category, entry_price, shares, pnl } = trade.rows[0];
 
-        // If it had an account and a P&L, reverse the math
-        // We SUBTRACT the P&L to undo what we originally added.
-        if (trade && trade.account_id && trade.pnl) {
-            await pool.query(
-                "UPDATE accounts SET balance = balance - $1 WHERE account_id = $2",
-                [Number(trade.pnl), trade.account_id]
-            );
+        // 2. Perform the "Refund" logic if linked to an account
+        if (account_id) {
+            if (trade_category === 'INVESTMENT') {
+                // Refund the cost to cash balance
+                const cost = Number(entry_price) * Number(shares);
+                await pool.query("UPDATE accounts SET balance = balance + $1 WHERE account_id = $2", [cost, account_id]);
+            } else if (trade_category === 'DAY_TRADE' && pnl) {
+                // Remove the P&L from the balance
+                await pool.query("UPDATE accounts SET balance = balance - $1 WHERE account_id = $2", [Number(pnl), account_id]);
+            }
         }
 
-        res.json({ message: "Trade deleted and balance reversed" });
+        // 3. Delete the trade
+        await pool.query("DELETE FROM trades WHERE trade_id = $1", [id]);
+
+        res.json({ message: "Trade deleted and balance updated" });
     } catch (err) {
-        console.error(err);
-        res.status(500).send("Server Error");
+        console.error("Error in /trades DELETE:", err);
+        res.status(500).send("Error deleting trade");
     }
 });
 
