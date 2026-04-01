@@ -10,9 +10,9 @@ interface Trade {
 
 export default function AccountStatsModal({ trades, accountId }: { trades: Trade[], accountId: number }) {
     const { stats, chartData } = useMemo(() => {
-        // 1. Filter for specific account and day trades
+        // 1. Filter for specific account and day trades (Added strict ID check)
         const accountTrades = trades
-            .filter(t => t.account_id === accountId && t.trade_category === 'DAY_TRADE')
+            .filter(t => Number(t.account_id) === Number(accountId) && t.trade_category === 'DAY_TRADE')
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
         let cumulativePnL = 0;
@@ -97,7 +97,7 @@ export default function AccountStatsModal({ trades, accountId }: { trades: Trade
 function StatBox({ label, value, isPnL = false }: { label: string, value: string, isPnL?: boolean }) {
     const pnlColor = isPnL ? (value.startsWith('$-') ? 'text-red-600' : 'text-green-600') : 'text-gray-900';
     return (
-        <div className="bg-white p-3 rounded-lg border border-gray-100">
+        <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
             <p className="text-[9px] uppercase font-bold text-gray-400 tracking-tighter">{label}</p>
             <p className={`text-lg font-bold ${pnlColor}`}>{value}</p>
         </div>

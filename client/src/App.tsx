@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import InvestingDashboard from './pages/InvestingDashboard';
 import Accounts from './pages/Accounts';
 import TradingJournal from './pages/TradingJournal';
+import AccountDeepDive from "./pages/AccountDeepDive.tsx";
 
 function App() {
     return (
@@ -49,6 +50,7 @@ function App() {
                     <Route path="/" element={<Layout />}>
                         <Route index element={<InvestingDashboard />} />
                         <Route path="accounts" element={<Accounts />} />
+                        <Route path="accounts/:id" element={<AccountDeepDive />} />
                         <Route path="journal" element={<TradingJournal />} />
                     </Route>
                 </Routes>
