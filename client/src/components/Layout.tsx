@@ -7,9 +7,11 @@ export default function Layout() {
     const location = useLocation();
 
     return (
-        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col md:flex-row">
-            {/* SIDEBAR */}
-            <aside className="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col">
+        // Added h-screen and overflow-hidden to keep the sidebar static
+        <div className="h-screen bg-gray-50 text-gray-900 font-sans flex flex-col md:flex-row overflow-hidden">
+
+            {/* SIDEBAR - Fixed width and height */}
+            <aside className="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
                 <div className="p-6 flex items-center gap-3 border-b border-gray-200">
                     <LayoutDashboard className="text-gray-900" />
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">
@@ -17,7 +19,7 @@ export default function Layout() {
                     </h1>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     <Link
                         to="/"
                         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname === '/' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
@@ -27,7 +29,7 @@ export default function Layout() {
                     </Link>
                     <Link
                         to="/accounts"
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname === '/accounts' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname.startsWith('/accounts') ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                     >
                         <Wallet size={20} />
                         <span className="font-bold">Accounts</span>
@@ -50,8 +52,8 @@ export default function Layout() {
                 </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
-            <main className="flex-1 overflow-y-auto">
+            {/* MAIN CONTENT AREA - Scrollable */}
+            <main className="flex-1 h-full overflow-y-auto relative">
                 <Outlet />
             </main>
         </div>

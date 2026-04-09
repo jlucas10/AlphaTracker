@@ -8,9 +8,9 @@ interface Trade {
     created_at: string;
 }
 
-export default function AccountStatsModal({ trades, accountId }: { trades: Trade[], accountId: number }) {
+// Added showStats prop to toggle the internal cards
+export default function AccountStatsModal({ trades, accountId, showStats = true }: { trades: Trade[], accountId: number, showStats?: boolean }) {
     const { stats, chartData } = useMemo(() => {
-        // 1. Filter for specific account and day trades (Added strict ID check)
         const accountTrades = trades
             .filter(t => Number(t.account_id) === Number(accountId) && t.trade_category === 'DAY_TRADE')
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -25,7 +25,6 @@ export default function AccountStatsModal({ trades, accountId }: { trades: Trade
             };
         });
 
-        // 2. Performance Math
         const wins = accountTrades.filter(t => Number(t.pnl) > 0);
         const losses = accountTrades.filter(t => Number(t.pnl) < 0);
         const totalPnL = accountTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
@@ -47,18 +46,19 @@ export default function AccountStatsModal({ trades, accountId }: { trades: Trade
     }, [trades, accountId]);
 
     return (
-        <div className="space-y-6">
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatBox label="Win Rate" value={`${stats.winRate}%`} />
-                <StatBox label="Profit Factor" value={stats.profitFactor} />
-                <StatBox label="Total P&L" value={`$${stats.totalPnL}`} isPnL />
-                <StatBox label="Trades" value={stats.tradeCount.toString()} />
-            </div>
+        <div className="h-full flex flex-col space-y-4">
+            {/* Only render these if showStats is true */}
+            {showStats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <StatBox label="Win Rate" value={`${stats.winRate}%`} />
+                    <StatBox label="Profit Factor" value={stats.profitFactor} />
+                    <StatBox label="Total P&L" value={`$${stats.totalPnL}`} isPnL />
+                    <StatBox label="Trades" value={stats.tradeCount.toString()} />
+                </div>
+            )}
 
-            {/* Equity Curve Chart */}
-            <div className="h-64 w-full bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-[10px] uppercase font-bold text-gray-400 mb-4 tracking-widest">Equity Curve (Cumulative P&L)</p>
+            {/* Chart container adjusts height based on showStats */}
+            <div className={`w-full ${showStats ? 'h-64' : 'flex-1'} min-h-[160px]`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
                         <defs>
