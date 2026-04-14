@@ -68,6 +68,33 @@ app.post("/accounts", async (req: Request, res: Response) => {
     }
 });
 
+app.delete("/accounts/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Perform the delete
+        const result = await pool.query(
+            "DELETE FROM accounts WHERE account_id = $1 RETURNING *",
+            [id]
+        );
+
+        // If no rows were deleted, the account didn't exist
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Account not found" });
+        }
+
+        // Return a clean JSON success message
+        res.status(200).json({ message: "Account deleted successfully" });
+    } catch (err) {
+        // Narrow the type so TS knows it has a .message property
+        if (err instanceof Error) {
+            console.error("Database error during delete:", err.message);
+        } else {
+            console.error("An unknown error occurred during delete");
+        }
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
 // ==========================================
 // 3. DAILY JOURNAL ROUTES (NEW Notion-Style)
 // ==========================================
