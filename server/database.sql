@@ -10,7 +10,6 @@ CREATE TABLE accounts (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- STEP 3: CREATE TRADES TABLE
 -- This is the "Child" table. It links to accounts via account_id.
 CREATE TABLE trades (
     trade_id SERIAL PRIMARY KEY,
@@ -29,7 +28,6 @@ CREATE TABLE trades (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- STEP 4: CREATE DAILY JOURNAL TABLE
 -- Stores psychological data and daily bias
 CREATE TABLE daily_journal (
     journal_id SERIAL PRIMARY KEY,
@@ -42,7 +40,6 @@ CREATE TABLE daily_journal (
     UNIQUE(user_id, date)                -- Only one entry per user per day
 );
 
--- STEP 5: OPTIMIZATION (Indexing)
 -- This makes your "Account Deep Dive" and "Calendar" views load instantly
 CREATE INDEX idx_trades_account_id ON trades(account_id);
 CREATE INDEX idx_trades_user_id ON trades(user_id);

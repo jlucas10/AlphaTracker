@@ -72,13 +72,11 @@ app.delete("/accounts/:id", async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Perform the delete
         const result = await pool.query(
             "DELETE FROM accounts WHERE account_id = $1 RETURNING *",
             [id]
         );
 
-        // If no rows were deleted, the account didn't exist
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Account not found" });
         }
