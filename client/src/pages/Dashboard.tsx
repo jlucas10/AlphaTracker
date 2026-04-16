@@ -42,15 +42,24 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (user) {
-            fetch(`${API_URL}/accounts?user_id=${user.id}`).then(res => res.json()).then(data => {
-                setAccounts(data);
-                if (!urlId && data.length > 0) {
-                    setCurrentAccountId(data[0].account_id);
-                    navigate(`/accounts/${data[0].account_id}`);
-                }
-            });
+            fetch(`${API_URL}/accounts?user_id=${user.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    setAccounts(data);
+                    
+                    if (data.length > 0) {
+                        // 1. If we have a URL ID, use it. 
+                        // 2. If we DON'T (we are on /dashboard), use the first account's ID for data only.
+                        const idToLoad = urlId ? Number(urlId) : data[0].account_id;
+                        setCurrentAccountId(idToLoad);
+                        
+                        // IMPORTANT: Removed the navigate() call here.
+                        // This allows the URL to remain "/dashboard" 
+                    }
+                })
+                .catch(err => console.error("Error fetching accounts:", err));
         }
-    }, [user, urlId]);
+    }, [user, urlId, API_URL]);
 
     const fetchTrades = async () => {
         if (user && currentAccountId) {
