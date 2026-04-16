@@ -22,15 +22,15 @@ export default function Layout() {
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
 
                     <Link
-                        to="/dashboard"
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname === '/dashboard' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+                        to="/"
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname === '/' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                     >
                         <LayoutDashboard size={20} />
                         <span className="font-bold">Dashboard</span>
                     </Link>
                     <Link
-                        to="/"
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname === '/' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+                        to="/investing"
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${location.pathname === '/investing' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                     >
                         <PieChart size={20} />
                         <span className="font-bold">Investing</span>

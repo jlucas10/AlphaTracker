@@ -61,15 +61,23 @@ export default function Dashboard() {
         }
     }, [user, urlId, API_URL]);
 
-    const fetchTrades = async () => {
-        if (user && currentAccountId) {
-            const res = await fetch(`${API_URL}/trades?user_id=${user.id}&account_id=${currentAccountId}`);
-            const data = await res.json();
-            setTrades(data);
-        }
-    };
-
-    useEffect(() => { fetchTrades(); }, [user, currentAccountId]);
+    useEffect(() => {
+        const loadTrades = async () => {
+            // We need both a user and an account ID to get trades
+            if (!user || !currentAccountId) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/trades?user_id=${user.id}&account_id=${currentAccountId}`);
+                if (!res.ok) throw new Error('Failed to fetch');
+                const data = await res.json();
+                setTrades(data);
+            } catch (err) {
+                console.error("Error loading trades:", err);
+            }
+        };
+    
+        loadTrades();
+    }, [user, currentAccountId, API_URL]);
 
     const currentAccount = accounts.find(a => a.account_id === currentAccountId);
 
@@ -251,7 +259,13 @@ export default function Dashboard() {
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Active Account</label>
                         <select
                             value={currentAccountId || ""}
-                            onChange={(e) => navigate(`/accounts/${e.target.value}`)}
+                            onChange={(e) => {
+                                const newId = Number(e.target.value);
+                                setCurrentAccountId(newId);
+                                if (location.pathname.startsWith('/accounts')) {
+                                    navigate(`/accounts/${newId}`);
+                                }
+                            }}
                             className="text-2xl font-bold bg-transparent outline-none cursor-pointer hover:text-blue-600 transition appearance-none"
                         >
                             {accounts.map(acc => (<option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>))}

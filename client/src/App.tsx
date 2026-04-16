@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import Layout from './components/Layout';
 import InvestingDashboard from './pages/InvestingDashboard';
 import Accounts from './pages/Accounts';
 import TradingJournal from './pages/TradingJournal';
 import AccountDeepDive from "./pages/AccountDeepDive.tsx";
-import Dashboard from './pages/AccountDeepDive.tsx';
+import Dashboard from './pages/Dashboard.tsx';
 
 function App() {
     return (
@@ -49,8 +49,8 @@ function App() {
             <SignedIn>
                 <Routes>
                     <Route path="/" element={<Layout />}>
-                        <Route path="dashboard" element={<Dashboard />} />
-                        <Route index element={<InvestingDashboard />} />
+                        <Route index element={<Dashboard />} />
+                        <Route path="investing" element={<InvestingDashboard />} />
                         <Route path="accounts" element={<Accounts />} />
                         <Route path="accounts/:id" element={<AccountDeepDive />} />
                         <Route path="journal" element={<TradingJournal />} />
