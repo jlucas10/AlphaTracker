@@ -364,17 +364,56 @@ export default function Dashboard() {
                                     <section className="space-y-4 border-b border-gray-50 pb-10">
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Properties</p>
                                         <div className="space-y-2">
-                                            <div className="grid grid-cols-3 items-center group"><span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Ticker</span><input value={formData.ticker} onChange={e => setFormData({...formData, ticker: e.target.value.toUpperCase()})} className="col-span-2 p-1.5 hover:bg-gray-50 rounded transition font-bold uppercase outline-none" placeholder="Empty"/></div>
-                                            <div className="grid grid-cols-3 items-center group"><span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Size</span><input type="number" value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} className="col-span-2 p-1.5 hover:bg-gray-50 rounded transition font-bold outline-none" placeholder="0"/></div>
-                                            <div className="grid grid-cols-3 items-center group"><span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Net P&L</span><input type="number" value={formData.pnl} onChange={e => setFormData({...formData, pnl: e.target.value})} className="col-span-2 p-1.5 hover:bg-gray-50 rounded transition font-mono font-bold outline-none" placeholder="0.00"/></div>
+                                            {/* TICKER */}
+                                            <div className="grid grid-cols-3 items-center group">
+                                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Ticker</span>
+                                                <input 
+                                                    value={formData.ticker} 
+                                                    onChange={e => setFormData({...formData, ticker: e.target.value.toUpperCase()})} 
+                                                    className="col-span-2 p-2 bg-gray-50/50 border border-transparent hover:border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg transition-all font-bold uppercase outline-none" 
+                                                    placeholder="Empty"
+                                                />
+                                            </div>
+                                            {/* SIZE */}
+                                            <div className="grid grid-cols-3 items-center group">
+                                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Size</span>
+                                                <input 
+                                                    type="number" 
+                                                    value={formData.size} 
+                                                    onChange={e => setFormData({...formData, size: e.target.value})} 
+                                                    className="col-span-2 p-2 bg-gray-50/50 border border-transparent hover:border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg transition-all font-bold outline-none" 
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                            {/* PNL */}
+                                            <div className="grid grid-cols-3 items-center group">
+                                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Net P&L</span>
+                                                <input 
+                                                    type="number" 
+                                                    value={formData.pnl} 
+                                                    onChange={e => setFormData({...formData, pnl: e.target.value})} 
+                                                    className="col-span-2 p-2 bg-gray-50/50 border border-transparent hover:border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg transition-all font-mono font-bold outline-none" 
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                            {/* MOOD */}
                                             <div className="grid grid-cols-3 items-center group">
                                                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Mood</span>
-                                                <select value={formData.mood} onChange={e => setFormData({...formData, mood: e.target.value})} className="col-span-2 p-1.5 hover:bg-gray-50 rounded outline-none font-bold">
-                                                    <option value="Flow State 🧘‍♂️">Flow State 🧘‍♂️</option><option value="Neutral 😐">Neutral 😐</option><option value="Tilted 😡">Tilted 😡</option><option value="FOMO 🥺">FOMO 🥺</option>
+                                                <select 
+                                                    value={formData.mood} 
+                                                    onChange={e => setFormData({...formData, mood: e.target.value})} 
+                                                    className="col-span-2 p-2 bg-gray-50/50 border border-transparent hover:border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg outline-none font-bold transition-all appearance-none cursor-pointer"
+                                                >
+                                                    <option value="Flow State 🧘‍♂️">Flow State 🧘‍♂️</option>
+                                                    <option value="Neutral 😐">Neutral 😐</option>
+                                                    <option value="Tilted 😡">Tilted 😡</option>
+                                                    <option value="FOMO 🥺">FOMO 🥺</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </section>
+                                    
+                                    {/* DISCIPLINE CHECKLIST - Looks great already! */}
                                     <section>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Discipline Checklist</p>
                                         <div className="grid grid-cols-1 gap-2">
@@ -386,10 +425,11 @@ export default function Dashboard() {
                                         </div>
                                     </section>
                                 </div>
+
                                 <div className="space-y-10">
+                                    {/* GALLERY */}
                                     <section>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Gallery</p>
-                                        {/* Updated Gallery JSX with Horizontal Scroll */}
                                         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                                             {formData.screenshots.map((url, idx) => (
                                                 <div key={idx} className="relative flex-none w-[280px] aspect-video rounded-xl overflow-hidden group border border-gray-100 shadow-sm snap-start">
@@ -403,7 +443,18 @@ export default function Dashboard() {
                                             </label>
                                         </div>
                                     </section>
-                                    <section><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Post-Session Journal</p><textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full h-40 p-0 bg-transparent text-sm leading-relaxed outline-none resize-none placeholder:text-gray-300" placeholder="Type thoughts here..."/></section>
+
+                                    {/* POST-SESSION JOURNAL - Added subtle background and padding */}
+                                    <section>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Post-Session Journal</p>
+                                        <textarea 
+                                            value={formData.notes} 
+                                            onChange={e => setFormData({...formData, notes: e.target.value})} 
+                                            className="w-full h-40 p-4 bg-gray-50/50 border border-transparent focus:bg-white focus:border-gray-200 rounded-2xl text-sm leading-relaxed outline-none resize-none placeholder:text-gray-300 transition-all" 
+                                            placeholder="Type thoughts here..."
+                                        />
+                                    </section>
+
                                     <button onClick={handleSaveAudit} disabled={isSaving} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
                                         {isSaving ? "Saving..." : "Complete Daily Audit"}
                                     </button>
