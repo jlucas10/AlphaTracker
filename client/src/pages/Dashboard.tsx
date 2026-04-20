@@ -31,7 +31,12 @@ export default function Dashboard() {
         trade_type: 'LONG',
         notes: '',
         screenshots: [] as string[],
-        rules_followed: [] as string[],
+        rules: [
+            { text: "Stuck to Plan", followed: false },
+            { text: "Respected Stops", followed: false },
+            { text: "No FOMO Entry", followed: false },
+            { text: "Max Daily Loss Followed", followed: false }
+        ],
         mood: 'Neutral'
     });
 
@@ -61,22 +66,19 @@ export default function Dashboard() {
         }
     }, [user, urlId, API_URL]);
 
+    const fetchTrades = async () => {
+        if (!user || !currentAccountId) return;
+        try {
+            const res = await fetch(`${API_URL}/trades?user_id=${user.id}&account_id=${currentAccountId}`);
+            const data = await res.json();
+            setTrades(data);
+        } catch (err) {
+            console.error("Error fetching trades:", err);
+        }
+    };
+
     useEffect(() => {
-        const loadTrades = async () => {
-            // We need both a user and an account ID to get trades
-            if (!user || !currentAccountId) return;
-            
-            try {
-                const res = await fetch(`${API_URL}/trades?user_id=${user.id}&account_id=${currentAccountId}`);
-                if (!res.ok) throw new Error('Failed to fetch');
-                const data = await res.json();
-                setTrades(data);
-            } catch (err) {
-                console.error("Error loading trades:", err);
-            }
-        };
-    
-        loadTrades();
+        fetchTrades();
     }, [user, currentAccountId, API_URL]);
 
     const currentAccount = accounts.find(a => a.account_id === currentAccountId);
@@ -164,11 +166,34 @@ export default function Dashboard() {
         } catch (error) { console.error(error); }
     };
 
+    const toggleRule = (index) => {
+        const updatedRules = [...formData.rules];
+        updatedRules[index].followed = !updatedRules[index].followed;
+        setFormData({ ...formData, rules: updatedRules });
+    };
+
     const handleDayClick = (day: any) => {
         if (!day || day.isSaturday) return;
         setSelectedDayData(day);
         loadDayData(day.day);
         setIsDrawerOpen(true);
+    };
+
+    const addRule = () => {
+        const newRuleText = prompt("Enter your new trading rule:");
+        if (newRuleText) {
+            setFormData({
+                ...formData,
+                rules: [...formData.rules, { text: newRuleText, followed: false }]
+            });
+        }
+    };
+
+    const deleteRule = (index) => {
+        setFormData({
+            ...formData,
+            rules: formData.rules.filter((_, i) => i !== index)
+        });
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,13 +230,21 @@ export default function Dashboard() {
     const handleSaveAudit = async () => {
         if (!user || !selectedDayData) return;
         setIsSaving(true);
+    
         const year = viewDate.getFullYear();
         const month = (viewDate.getMonth() + 1).toString().padStart(2, '0');
         const dateStr = `${year}-${month}-${selectedDayData.day.toString().padStart(2, '0')}`;
         const imageString = formData.screenshots.join(',');
-
+    
+        // Calculate which rules were followed for the legacy "setup" string 
+        // and keep the full snapshot for the new "rules" logic.
+        const rulesFollowedNames = (formData.rules || [])
+            .filter(r => r.followed)
+            .map(r => r.text)
+            .join(", ");
+    
         try {
-            // 1. Journal Update (Uses POST which your backend likely handles as an upsert already)
+            // 1. Journal Update
             await fetch(`${API_URL}/journal`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -220,33 +253,48 @@ export default function Dashboard() {
                     date: dateStr,
                     daily_notes: formData.notes,
                     mood: formData.mood,
-                    screenshot_url: imageString
+                    screenshot_url: imageString,
+                    // ADD THIS: Send the full rules snapshot to the journal entry
+                    rules_snapshot: JSON.stringify(formData.rules) 
                 })
             });
-
-            // 2. Trade Update Logic (The Fix)
+    
+            // 2. Trade Update Logic
             if (formData.ticker) {
-                // If trade_id exists, we DELETE the old one before posting the new one
-                // This ensures your balance and win rate update correctly without duplicates
                 if (formData.trade_id) {
                     await fetch(`${API_URL}/trades/${formData.trade_id}`, { method: 'DELETE' });
                 }
-
+    
                 await fetch(`${API_URL}/trades`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: user.id, account_id: currentAccountId, ticker: formData.ticker, pnl: Number(formData.pnl),
-                        shares: Number(formData.size) || 1, trade_type: formData.trade_type, trade_category: 'DAY_TRADE',
-                        asset_type: 'FUTURE', created_at: dateStr, trade_screenshot_url: imageString,
-                        setup: formData.rules_followed.join(", "), entry_price: 0, exit_price: 0
+                        user_id: user.id, 
+                        account_id: currentAccountId, 
+                        ticker: formData.ticker, 
+                        pnl: Number(formData.pnl),
+                        shares: Number(formData.size) || 1, 
+                        trade_type: formData.trade_type, 
+                        trade_category: 'DAY_TRADE',
+                        asset_type: 'FUTURE', 
+                        created_at: dateStr, 
+                        trade_screenshot_url: imageString,
+                        setup: rulesFollowedNames, // Updated to use the new object structure
+                        entry_price: 0, 
+                        exit_price: 0
                     })
                 });
             }
-
+    
+            // 3. REFRESH DATA (This is the line that was crashing)
             await fetchTrades();
+            
             setIsDrawerOpen(false);
-        } catch (err) { console.error(err); } finally { setIsSaving(false); }
+        } catch (err) { 
+            console.error(err); 
+        } finally { 
+            setIsSaving(false); 
+        }
     };
 
     return (
@@ -413,18 +461,66 @@ export default function Dashboard() {
                                         </div>
                                     </section>
                                     
-                                    {/* DISCIPLINE CHECKLIST - Looks great already! */}
+                                    {/* DISCIPLINE CHECKLIST - Now Dynamic and Snapshotted */}
                                     <section>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Discipline Checklist</p>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Discipline Checklist</p>
+                                            
+                                            {/* ADD RULE BUTTON */}
+                                            <button 
+                                                onClick={() => {
+                                                    const newRuleText = prompt("Enter your new trading rule:");
+                                                    if (newRuleText) {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            rules: [...(prev.rules || []), { text: newRuleText, followed: false }]
+                                                        }));
+                                                    }
+                                                }}
+                                                className="p-1 hover:bg-gray-100 rounded text-blue-500 transition flex items-center gap-1 group"
+                                            >
+                                                <Plus size={14}/>
+                                                <span className="text-[9px] font-bold uppercase opacity-0 group-hover:opacity-100 transition-opacity">Add Rule</span>
+                                            </button>
+                                        </div>
+
                                         <div className="grid grid-cols-1 gap-2">
-                                            {["Stuck to Plan", "Respected Stops", "No FOMO Entry", "Max Daily Loss Followed"].map(rule => (
-                                                <button key={rule} onClick={() => setFormData(prev => ({...prev, rules_followed: prev.rules_followed.includes(rule) ? prev.rules_followed.filter(r => r !== rule) : [...prev.rules_followed, rule]}))} className={`flex items-center gap-3 p-3 rounded-xl border transition text-left ${formData.rules_followed.includes(rule) ? 'bg-green-50 border-green-100 text-green-700 shadow-sm' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}>
-                                                    <CheckCircle2 size={16}/><span className="text-xs font-bold">{rule}</span>
-                                                </button>
+                                            {/* We map through the new object structure: { text, followed } */}
+                                            {formData.rules?.map((rule, idx) => (
+                                                <div key={idx} className="group relative flex items-center gap-2">
+                                                    <button 
+                                                        onClick={() => {
+                                                            const updatedRules = [...formData.rules];
+                                                            updatedRules[idx].followed = !updatedRules[idx].followed;
+                                                            setFormData({ ...formData, rules: updatedRules });
+                                                        }} 
+                                                        className={`flex-1 flex items-center gap-3 p-3 rounded-xl border transition text-left ${
+                                                            rule.followed 
+                                                            ? 'bg-green-50 border-green-100 text-green-700 shadow-sm' 
+                                                            : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'
+                                                        }`}
+                                                    >
+                                                        <CheckCircle2 size={16} className={rule.followed ? "text-green-600" : "text-gray-300"} />
+                                                        <span className="text-xs font-bold">{rule.text}</span>
+                                                    </button>
+
+                                                    {/* DELETE BUTTON - Visible on Hover */}
+                                                    <button 
+                                                        onClick={() => {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                rules: prev.rules.filter((_, i) => i !== idx)
+                                                            }));
+                                                        }}
+                                                        className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
                                             ))}
                                         </div>
                                     </section>
-                                </div>
+                                </div> {/* This closes the first column of the grid */}
 
                                 <div className="space-y-10">
                                     {/* GALLERY */}
