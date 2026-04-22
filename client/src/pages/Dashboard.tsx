@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ export default function Dashboard() {
     const { id: urlId } = useParams();
     const { user } = useUser();
     const navigate = useNavigate();
+    const location = useLocation();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     // UI States
@@ -22,7 +23,7 @@ export default function Dashboard() {
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Form State - Added trade_id to track updates
+    // Form State - Snapshot architecture
     const [formData, setFormData] = useState({
         trade_id: null as number | null,
         ticker: '',
@@ -51,15 +52,9 @@ export default function Dashboard() {
                 .then(res => res.json())
                 .then(data => {
                     setAccounts(data);
-                    
                     if (data.length > 0) {
-                        // 1. If we have a URL ID, use it. 
-                        // 2. If we DON'T (we are on /dashboard), use the first account's ID for data only.
                         const idToLoad = urlId ? Number(urlId) : data[0].account_id;
-                        setCurrentAccountId(idToLoad);
-                        
-                        // IMPORTANT: Removed the navigate() call here.
-                        // This allows the URL to remain "/dashboard" 
+                        setCurrentAccountId(Number(idToLoad));
                     }
                 })
                 .catch(err => console.error("Error fetching accounts:", err));
@@ -70,8 +65,10 @@ export default function Dashboard() {
         if (!user || !currentAccountId) return;
         try {
             const res = await fetch(`${API_URL}/trades?user_id=${user.id}&account_id=${currentAccountId}`);
-            const data = await res.json();
-            setTrades(data);
+            if (res.ok) {
+                const data = await res.json();
+                setTrades(data);
+            }
         } catch (err) {
             console.error("Error fetching trades:", err);
         }
@@ -81,7 +78,12 @@ export default function Dashboard() {
         fetchTrades();
     }, [user, currentAccountId, API_URL]);
 
-    const currentAccount = accounts.find(a => a.account_id === currentAccountId);
+    const currentAccount = accounts.find(a => Number(a.account_id) === Number(currentAccountId));
+
+    // Filtered trades for the active account
+    const currentAccountTrades = useMemo(() => {
+        return trades.filter(t => Number(t.account_id) === Number(currentAccountId));
+    }, [trades, currentAccountId]);
 
     const { calendarDays, monthlyPnL, stats } = useMemo(() => {
         const year = viewDate.getFullYear();
@@ -89,7 +91,7 @@ export default function Dashboard() {
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        const accTrades = trades.filter(t => Number(t.account_id) === currentAccountId && t.trade_category === 'DAY_TRADE');
+        const accTrades = currentAccountTrades.filter(t => t.trade_category === 'DAY_TRADE');
         const winners = accTrades.filter(t => Number(t.pnl) > 0);
         const losers = accTrades.filter(t => Number(t.pnl) < 0);
 
@@ -134,7 +136,7 @@ export default function Dashboard() {
                 ]
             }
         };
-    }, [trades, currentAccountId, viewDate]);
+    }, [currentAccountTrades, viewDate]);
 
     const loadDayData = async (dayNum: number) => {
         const year = viewDate.getFullYear();
@@ -142,13 +144,19 @@ export default function Dashboard() {
         const dateStr = `${year}-${month}-${dayNum.toString().padStart(2, '0')}`;
 
         try {
-            const journalRes = await fetch(`${API_URL}/journal?user_id=${user?.id}`);
+            // Strictly fetch journals for this specific account
+            const journalRes = await fetch(`${API_URL}/journal?user_id=${user?.id}&account_id=${currentAccountId}`);
             const journalList = await journalRes.json();
-            const dayJournal = journalList.find((j: any) => j.date.substring(0, 10) === dateStr);
+            
+            // Strict find: Account ID AND Date matching
+            const dayJournal = Array.isArray(journalList) ? journalList.find((j: any) => {
+                const dbDate = j.date?.substring(0, 10);
+                return dbDate === dateStr && Number(j.account_id) === Number(currentAccountId);
+            }) : null;
 
-            const dayTrade = trades.find(t =>
-                t.created_at.substring(0, 10) === dateStr &&
-                Number(t.account_id) === currentAccountId
+            const dayTrade = currentAccountTrades.find(t =>
+                t.created_at?.substring(0, 10) === dateStr &&
+                t.trade_category === 'DAY_TRADE'
             );
 
             setFormData({
@@ -159,24 +167,43 @@ export default function Dashboard() {
                 trade_type: dayTrade?.trade_type || 'LONG',
                 notes: dayJournal?.daily_notes || '',
                 mood: dayJournal?.mood || 'Neutral',
-                // Change: Split the string back into an array for the gallery
-                screenshots: dayJournal?.screenshot_url ? dayJournal.screenshot_url.split(',') : [],
-                rules_followed: dayTrade?.setup ? dayTrade.setup.split(", ") : []
+                screenshots: dayJournal?.screenshot_url ? dayJournal.screenshot_url.split(',').filter(Boolean) : [],
+                rules: dayJournal?.rules_snapshot ? JSON.parse(dayJournal.rules_snapshot) : [
+                    { text: "Stuck to Plan", followed: false },
+                    { text: "Respected Stops", followed: false },
+                    { text: "No FOMO Entry", followed: false },
+                    { text: "Max Daily Loss Followed", followed: false }
+                ]
             });
-        } catch (error) { console.error(error); }
-    };
-
-    const toggleRule = (index) => {
-        const updatedRules = [...formData.rules];
-        updatedRules[index].followed = !updatedRules[index].followed;
-        setFormData({ ...formData, rules: updatedRules });
+        } catch (error) { 
+            console.error("Error loading day data:", error); 
+        }
     };
 
     const handleDayClick = (day: any) => {
         if (!day || day.isSaturday) return;
+        
+        // Zero State reset to prevent ghosting images/notes while loading
+        setFormData({
+            trade_id: null, ticker: '', pnl: '', size: '', trade_type: 'LONG',
+            notes: '', screenshots: [], mood: 'Neutral', 
+            rules: [
+                { text: "Stuck to Plan", followed: false },
+                { text: "Respected Stops", followed: false },
+                { text: "No FOMO Entry", followed: false },
+                { text: "Max Daily Loss Followed", followed: false }
+            ]
+        });
+
         setSelectedDayData(day);
         loadDayData(day.day);
         setIsDrawerOpen(true);
+    };
+
+    const toggleRule = (index: number) => {
+        const updatedRules = [...formData.rules];
+        updatedRules[index].followed = !updatedRules[index].followed;
+        setFormData({ ...formData, rules: updatedRules });
     };
 
     const addRule = () => {
@@ -189,7 +216,7 @@ export default function Dashboard() {
         }
     };
 
-    const deleteRule = (index) => {
+    const deleteRule = (index: number) => {
         setFormData({
             ...formData,
             rules: formData.rules.filter((_, i) => i !== index)
@@ -204,7 +231,6 @@ export default function Dashboard() {
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-        // Change: Upload all selected files in parallel
         const uploadPromises = Array.from(files).map(async (file) => {
             const data = new FormData();
             data.append('file', file);
@@ -234,32 +260,32 @@ export default function Dashboard() {
         const year = viewDate.getFullYear();
         const month = (viewDate.getMonth() + 1).toString().padStart(2, '0');
         const dateStr = `${year}-${month}-${selectedDayData.day.toString().padStart(2, '0')}`;
-        const imageString = formData.screenshots.join(',');
+        
+        // Clean images to prevent saving empty commas
+        const imageString = formData.screenshots.filter(s => s).join(',');
     
-        // Calculate which rules were followed for the legacy "setup" string 
-        // and keep the full snapshot for the new "rules" logic.
         const rulesFollowedNames = (formData.rules || [])
             .filter(r => r.followed)
             .map(r => r.text)
             .join(", ");
     
         try {
-            // 1. Journal Update
+            // 1. Journal Save - Forced Account Scoping
             await fetch(`${API_URL}/journal`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: user.id,
+                    account_id: currentAccountId, // Linked to account
                     date: dateStr,
                     daily_notes: formData.notes,
                     mood: formData.mood,
                     screenshot_url: imageString,
-                    // ADD THIS: Send the full rules snapshot to the journal entry
                     rules_snapshot: JSON.stringify(formData.rules) 
                 })
             });
     
-            // 2. Trade Update Logic
+            // 2. Trade Save - Forced Account Scoping
             if (formData.ticker) {
                 if (formData.trade_id) {
                     await fetch(`${API_URL}/trades/${formData.trade_id}`, { method: 'DELETE' });
@@ -270,7 +296,7 @@ export default function Dashboard() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: user.id, 
-                        account_id: currentAccountId, 
+                        account_id: currentAccountId, // Fixed: use currentAccountId
                         ticker: formData.ticker, 
                         pnl: Number(formData.pnl),
                         shares: Number(formData.size) || 1, 
@@ -279,19 +305,17 @@ export default function Dashboard() {
                         asset_type: 'FUTURE', 
                         created_at: dateStr, 
                         trade_screenshot_url: imageString,
-                        setup: rulesFollowedNames, // Updated to use the new object structure
+                        setup: rulesFollowedNames,
                         entry_price: 0, 
                         exit_price: 0
                     })
                 });
             }
     
-            // 3. REFRESH DATA (This is the line that was crashing)
             await fetchTrades();
-            
             setIsDrawerOpen(false);
         } catch (err) { 
-            console.error(err); 
+            console.error("Save failed:", err); 
         } finally { 
             setIsSaving(false); 
         }
@@ -342,7 +366,7 @@ export default function Dashboard() {
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center font-bold text-xl">{stats.winRate}%</div>
                     </div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Trades: {trades.length}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Trades: {currentAccountTrades.length}</p>
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-around min-h-[250px]">
@@ -359,7 +383,7 @@ export default function Dashboard() {
                 <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[250px]">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Equity Curve</p>
                     <div className="flex-1 w-full min-h-[160px]">
-                        <AccountStatsModal trades={trades} accountId={currentAccountId} showStats={false} />
+                        <AccountStatsModal trades={currentAccountTrades} accountId={currentAccountId} showStats={false} />
                     </div>
                 </div>
             </div>
@@ -468,15 +492,7 @@ export default function Dashboard() {
                                             
                                             {/* ADD RULE BUTTON */}
                                             <button 
-                                                onClick={() => {
-                                                    const newRuleText = prompt("Enter your new trading rule:");
-                                                    if (newRuleText) {
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            rules: [...(prev.rules || []), { text: newRuleText, followed: false }]
-                                                        }));
-                                                    }
-                                                }}
+                                                onClick={addRule}
                                                 className="p-1 hover:bg-gray-100 rounded text-blue-500 transition flex items-center gap-1 group"
                                             >
                                                 <Plus size={14}/>
@@ -485,15 +501,10 @@ export default function Dashboard() {
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-2">
-                                            {/* We map through the new object structure: { text, followed } */}
                                             {formData.rules?.map((rule, idx) => (
                                                 <div key={idx} className="group relative flex items-center gap-2">
                                                     <button 
-                                                        onClick={() => {
-                                                            const updatedRules = [...formData.rules];
-                                                            updatedRules[idx].followed = !updatedRules[idx].followed;
-                                                            setFormData({ ...formData, rules: updatedRules });
-                                                        }} 
+                                                        onClick={() => toggleRule(idx)} 
                                                         className={`flex-1 flex items-center gap-3 p-3 rounded-xl border transition text-left ${
                                                             rule.followed 
                                                             ? 'bg-green-50 border-green-100 text-green-700 shadow-sm' 
@@ -504,14 +515,8 @@ export default function Dashboard() {
                                                         <span className="text-xs font-bold">{rule.text}</span>
                                                     </button>
 
-                                                    {/* DELETE BUTTON - Visible on Hover */}
                                                     <button 
-                                                        onClick={() => {
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                rules: prev.rules.filter((_, i) => i !== idx)
-                                                            }));
-                                                        }}
+                                                        onClick={() => deleteRule(idx)}
                                                         className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"
                                                     >
                                                         <X size={14} />
@@ -520,10 +525,9 @@ export default function Dashboard() {
                                             ))}
                                         </div>
                                     </section>
-                                </div> {/* This closes the first column of the grid */}
+                                </div>
 
                                 <div className="space-y-10">
-                                    {/* GALLERY */}
                                     <section>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Gallery</p>
                                         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
@@ -540,7 +544,6 @@ export default function Dashboard() {
                                         </div>
                                     </section>
 
-                                    {/* POST-SESSION JOURNAL - Added subtle background and padding */}
                                     <section>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Post-Session Journal</p>
                                         <textarea 

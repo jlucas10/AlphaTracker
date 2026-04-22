@@ -52,7 +52,7 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="investing" element={<InvestingDashboard />} />
                         <Route path="accounts" element={<Accounts />} />
-                        <Route path="accounts/:id" element={<AccountDeepDive />} />
+                        {/*<Route path="accounts/:id" element={<AccountDeepDive />} />*/}
                         <Route path="journal" element={<TradingJournal />} />
                     </Route>
                 </Routes>
